@@ -3,6 +3,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from loguru import logger
 from api.v1 import router as router_v1
+from services.database import database_ping
+
+from services.redis import get_redis
 
 
 @asynccontextmanager
@@ -16,8 +19,12 @@ async def lifespan(_: FastAPI):
 
 
 async def pre_check():
-    logger.add("logs/app.log", rotation="monthly")
+    logger.add("logs/app.log", rotation="monthly", retention="3 month", compression="gz")
     logger.info("Server is starting")
+    await (await get_redis()).ping()
+    logger.debug("Redis connection is established")
+    await database_ping()
+    logger.debug("Database connection is established")
 
 
 async def pre_shutdown():
