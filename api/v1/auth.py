@@ -1,17 +1,42 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+
+from domain import create_user
+from domain.auth import UserAlreadyExists, UnknownException, get_token, PasswordIsIncorrect, UserDoesNotExists
+from schemas import UserRegisterBody, UserRegisterResponse, UserLoginBody, AccessTokenResponse
+from services.database import get_db
 
 auth_router = APIRouter(prefix="/auth")
 
 
 @auth_router.post("/register", summary="Register a new user")
-async def auth_register():
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED,)
+async def auth_register(
+    data: UserRegisterBody,
+    session: AsyncSession = Depends(get_db),
+) -> UserRegisterResponse:
+    try:
+        user = await create_user(session, data)
+    except UserAlreadyExists:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT)
+    except UnknownException:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return user
 
 
 @auth_router.post("/login", summary="Login user and get access token")
-async def auth_login():
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED,)
+async def auth_login(
+    data: UserLoginBody,
+    session: AsyncSession = Depends(get_db),
+) -> AccessTokenResponse:
+    try:
+        token = await get_token(session, data)
+    except PasswordIsIncorrect:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    except UserDoesNotExists:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return token
+
 
 
 @auth_router.post("/logout", summary="Logout user")

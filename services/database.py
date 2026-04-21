@@ -1,5 +1,7 @@
+from typing import AsyncGenerator
+
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from config import POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_DATABASE
 
@@ -20,3 +22,19 @@ async def database_ping() -> bool:
             """select 1"""
         ))
         return query.scalar_one() == 1
+
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Dependency function для FastAPI.
+    Создаёт сессию на один запрос и закрывает после.
+    """
+    async with async_session() as session:
+        try:
+            yield session
+            await session.commit()  # Автокоммит при успехе
+        except Exception:
+            await session.rollback()  # Откат при ошибке
+            raise
+        finally:
+            await session.close()  # Закрываем сессию
