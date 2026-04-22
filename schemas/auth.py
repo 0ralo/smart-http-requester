@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, field_validator
 
 
@@ -12,6 +14,11 @@ class UserCredentials(BaseModel):
         return value
 
 
+class BaseModelFromAttributes(BaseModel):
+    class Config:
+        from_attributes = True
+
+
 class UserRegisterBody(UserCredentials):
     ...
 
@@ -21,7 +28,7 @@ class UserLoginBody(UserRegisterBody):
 
 
 
-class UserRegisterResponse(BaseModel):
+class UserRegisterResponse(BaseModelFromAttributes):
     user_id: int
     username: str
 
@@ -32,3 +39,14 @@ class UserRegisterResponse(BaseModel):
 class AccessTokenResponse(BaseModel):
     access_token: str
     token_type: str
+
+
+class UserIdPassword(BaseModelFromAttributes):
+    user_id: int
+    password_hash: bytes
+
+
+class User(BaseModelFromAttributes):
+    username: str
+    user_id: int
+    privileges: Optional[int]

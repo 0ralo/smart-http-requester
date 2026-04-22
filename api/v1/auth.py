@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from starlette import status
+from typing import Annotated
 
-from domain import create_user
-from domain.auth import UserAlreadyExists, UnknownException, get_token, PasswordIsIncorrect, UserDoesNotExists
-from schemas import UserRegisterBody, UserRegisterResponse, UserLoginBody, AccessTokenResponse
+from fastapi import APIRouter, HTTPException, Depends, Response, status
+from fastapi.params import Security
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from domain.auth import UserAlreadyExists, UnknownException, get_token, PasswordIsIncorrect, UserDoesNotExists, create_user, delete_token
+from middleware.auth import authorization
+from schemas import UserRegisterBody, UserRegisterResponse, UserLoginBody, AccessTokenResponse, User
 from services.database import get_db
 
 auth_router = APIRouter(prefix="/auth")
@@ -38,10 +40,16 @@ async def auth_login(
     return token
 
 
-
 @auth_router.post("/logout", summary="Logout user")
-async def auth_logout():
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED,)
+async def auth_logout(
+    user: Annotated[User, Security(authorization())],
+    session: AsyncSession = Depends(get_db),
+) -> Response:
+    try:
+        await delete_token(session, user.user_id)
+    except UserDoesNotExists:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+    return Response(status_code=status.HTTP_200_OK)
 
 
 @auth_router.post("/refresh", summary="Refresh access token")

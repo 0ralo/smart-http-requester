@@ -7,7 +7,8 @@ from config import POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_DAT
 
 engine = create_async_engine(
     f"postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}/{POSTGRES_DATABASE}",
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    echo=True
 )
 
 async_session = async_sessionmaker(
@@ -25,16 +26,12 @@ async def database_ping() -> bool:
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Dependency function для FastAPI.
-    Создаёт сессию на один запрос и закрывает после.
-    """
     async with async_session() as session:
         try:
             yield session
-            await session.commit()  # Автокоммит при успехе
+            await session.commit()
         except Exception:
-            await session.rollback()  # Откат при ошибке
+            await session.rollback()
             raise
         finally:
-            await session.close()  # Закрываем сессию
+            await session.close()

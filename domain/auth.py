@@ -36,16 +36,28 @@ async def create_user(
                 raise UnknownException
 
 
-
 async def get_token(
     session: AsyncSession,
     data: UserLoginBody
 ):
     repo = AuthRepository(session)
-    user_password = await repo.get_user(data.username)
-    if user_password is None:
+    id_with_hash = await repo.get_user_id_password(data.username)
+    if id_with_hash.user_id is None:
         raise UserDoesNotExists
-    password_correct = check_password(data.password_hash, user_password)
+    password_correct = check_password(data.password_hash, id_with_hash.password_hash)
     if not password_correct:
         raise PasswordIsIncorrect
-    return AccessTokenResponse(token_type="Bearer", access_token="TEMPORARY TOKEN")
+    token = await repo.get_access_token_by_user_id(id_with_hash.user_id)
+    return AccessTokenResponse(token_type="Bearer", access_token=str(token))
+
+
+async def delete_token(
+    session: AsyncSession,
+    user_id: int
+) -> int:
+    repo = AuthRepository(session)
+    deleted_id = await repo.delete_token(user_id)
+    if deleted_id is None:
+        raise UserDoesNotExists
+    return deleted_id
+
