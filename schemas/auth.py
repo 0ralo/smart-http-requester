@@ -1,3 +1,4 @@
+import datetime
 from typing import Optional
 
 from pydantic import BaseModel, field_validator
@@ -48,5 +49,10 @@ class UserIdPassword(BaseModelFromAttributes):
 
 class User(BaseModelFromAttributes):
     username: str
-    user_id: int
+    id: int
     privileges: Optional[int]
+
+
+class UserMe(BaseModelFromAttributes):
+    username: str
+    valid_until: Optional[datetime.datetime]

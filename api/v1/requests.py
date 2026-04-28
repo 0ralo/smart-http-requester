@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from starlette import status
 
-requests_router = APIRouter(prefix="/requests")
+requests_router = APIRouter(prefix="/requests", tags=["requests"])
 
 @requests_router.post("/", summary="Create HTTP request task")
 async def request_create():
@@ -18,7 +18,7 @@ async def request_user_tasks():
     raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED)
 
 
-@requests_router.delete("/{task_id}", summary="Delete task fron queue")
+@requests_router.delete("/{task_id}", summary="Delete task from queue")
 async def request_delete():
     raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED)
 

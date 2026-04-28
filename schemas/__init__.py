@@ -1,6 +1,6 @@
 
 from schemas.auth import UserRegisterBody, UserRegisterResponse, UserLoginBody, AccessTokenResponse, UserIdPassword, \
-    User
+    User, UserMe
 
 __all__ = [
     "UserRegisterBody",
@@ -8,7 +8,8 @@ __all__ = [
     "UserLoginBody",
     "AccessTokenResponse",
     "UserIdPassword",
-    "User"
+    "User",
+    "UserMe"
 ]
 
 
