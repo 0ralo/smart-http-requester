@@ -3,12 +3,14 @@ from typing import AsyncGenerator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from config import POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_DATABASE
+from config import settings
 
+password_part = f":{settings.postgres_password}" if settings.postgres_password else ""
 engine = create_async_engine(
-    f"postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}/{POSTGRES_DATABASE}",
+    f"postgresql+psycopg://{settings.postgres_user}{password_part}@{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_database}",
     pool_pre_ping=True,
-    echo=True
+    echo=True,
+    future=True
 )
 
 async_session = async_sessionmaker(

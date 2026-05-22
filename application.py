@@ -5,8 +5,8 @@ from loguru import logger
 from api.v1 import router as router_v1
 
 from services.database import database_ping
-from services.redis import get_redis
-from services.rabbitmq import get_rabbitmq
+from services.redis import close_redis, get_redis
+from services.rabbitmq import close_rabbitmq, get_rabbitmq
 
 
 @asynccontextmanager
@@ -26,12 +26,14 @@ async def pre_check():
     logger.debug("Redis connection is established")
     await database_ping()
     logger.debug("Database connection is established")
-    await (await get_rabbitmq()).connect(1)
+    await get_rabbitmq()
     logger.debug("RabbitMQ connection is established")
 
 
 async def pre_shutdown():
     logger.info("Server is shutting down")
+    await close_rabbitmq()
+    await close_redis()
 
 
 app = FastAPI(
