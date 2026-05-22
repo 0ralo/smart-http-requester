@@ -20,7 +20,13 @@ async def auth_register(
     session: AsyncSession = Depends(get_db),
 ) -> UserRegisterResponse:
     """
-    Endpoint allows to register a new user. Need to pass username and sha256 of password
+    Register a new user in the system.
+    
+    - **username**: Unique username for the new account
+    - **password_hash**: SHA256 hash of the password (64 hex characters)
+    
+    Returns 409 Conflict if username already exists.
+    Returns 500 Internal Server Error if registration fails.
     """
     try:
         user = await create_user(session, data)
@@ -37,7 +43,13 @@ async def auth_login(
     session: AsyncSession = Depends(get_db),
 ) -> AccessTokenResponse:
     """
-    Endpoint allows to log in an existing user. Need to pass username and sha256 of password
+    Authenticate user and retrieve access token.
+    
+    - **username**: User's username
+    - **password_hash**: SHA256 hash of the password
+    
+    Returns 401 Unauthorized if password is incorrect.
+    Returns 404 Not Found if user does not exist.
     """
     try:
         token = await get_token(session, data)
@@ -54,7 +66,10 @@ async def auth_logout(
     session: AsyncSession = Depends(get_db),
 ) -> Response:
     """
-    Endpoint allows to log out (make opaque token invalid for) a new user.
+    Invalidate the current user's access token and log them out.
+    
+    Requires authentication. After logout, the token will no longer be valid.
+    Returns 200 OK on successful logout.
     """
     try:
         await delete_token(session, user.id)
@@ -69,7 +84,10 @@ async def auth_refresh(
     session: AsyncSession = Depends(get_db),
 ) -> AccessTokenResponse:
     """
-    Endpoint allows to refresh token of a user.
+    Refresh the current user's access token with a new valid token.
+    
+    Requires authentication. Extends the token lifetime by 7 days.
+    Returns 404 Not Found if user does not exist.
     """
     try:
         new_token = await refresh_token(session, user.id)
@@ -84,7 +102,9 @@ async def auth_verify(
     session: AsyncSession = Depends(get_db),
 ) -> UserMe:
     """
-    Endpoint allows to get info about a user. Returns username and token lifetime.
+    Get information about the current authenticated user.
+    
+    Requires authentication. Returns user's username and token expiration time.
     """
     try:
         info = await get_user_info(session, user.id)
@@ -96,7 +116,9 @@ async def auth_verify(
 @auth_router.post("/auth/oauth/{provider}", summary="OAuth access token")
 async def auth_me():
     """
-    Endpoint is not implemented yet. Will allow to authenticate using foreign services.
+    OAuth authentication endpoint (not implemented yet).
+    
+    Will support third-party authentication providers (Google, GitHub, etc.) in the future.
     """
     raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED,)
 

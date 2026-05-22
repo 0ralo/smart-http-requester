@@ -20,7 +20,6 @@ class TaskCreate(BaseModel):
 
 class TaskResponse(BaseModelFromAttributes):
     id: UUID
-    user_id: int
     url: str
     method: str
     headers: Optional[dict]

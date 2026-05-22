@@ -38,8 +38,8 @@ class TaskRepository:
         raw_task = query.fetchone()
         return TaskResponse.model_validate(raw_task)
 
-    async def get_task_by_id(self, task_id: UUID) -> Optional[TaskResponse]:
-        """Get task by ID"""
+    async def get_task_by_id(self, task_id: UUID) -> Optional[tuple[TaskResponse, int]]:
+        """Get task by ID with user_id for ownership check"""
         query = await self.session.execute(text("""
             SELECT id, user_id, url, method, headers, body, status, attempt_count, max_attempts, result, created_at, updated_at
             FROM tasks
@@ -50,4 +50,23 @@ class TaskRepository:
         raw_task = query.fetchone()
         if raw_task is None:
             return None
-        return TaskResponse.model_validate(raw_task)
+        # Return both the TaskResponse and user_id for ownership check
+        user_id = raw_task.user_id
+        task = TaskResponse.model_validate(raw_task)
+        return task, user_id
+
+    async def get_user_tasks(self, user_id: int, skip: int = 0, limit: int = 20) -> list[TaskResponse]:
+        """Get all tasks for a user with pagination, sorted by updated_at (desc) or created_at"""
+        query = await self.session.execute(text("""
+            SELECT id, user_id, url, method, headers, body, status, attempt_count, max_attempts, result, created_at, updated_at
+            FROM tasks
+            WHERE user_id = :user_id
+            ORDER BY COALESCE(updated_at, created_at) DESC
+            LIMIT :limit OFFSET :skip
+        """).bindparams(
+            BindParameter("user_id", user_id, Integer),
+            BindParameter("skip", skip, Integer),
+            BindParameter("limit", limit, Integer),
+        ))
+        raw_tasks = query.fetchall()
+        return [TaskResponse.model_validate(task) for task in raw_tasks]

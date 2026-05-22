@@ -2,7 +2,7 @@ import json
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
@@ -53,7 +53,7 @@ async def request_create(
 @requests_router.get("/{task_id}", summary="Get task information")
 async def request_info(
     task_id: UUID,
-    user: Annotated[User, Depends(authorization())],
+    user: Annotated[User, Depends(authorization())] = Depends(authorization()),
     session: AsyncSession = Depends(get_db),
 ) -> TaskResponse:
     """
@@ -64,20 +64,37 @@ async def request_info(
     Returns 404 Not Found if the task does not exist.
     """
     repo = TaskRepository(session)
-    task = await repo.get_task_by_id(task_id)
+    result = await repo.get_task_by_id(task_id)
     
-    if task is None:
+    if result is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     
-    if task.user_id != user.id:
+    task, task_user_id = result
+    
+    if task_user_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     
     return task
 
 
 @requests_router.get("/", summary="Get current user tasks")
-async def request_user_tasks():
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED)
+async def request_user_tasks(
+    user: Annotated[User, Depends(authorization())] = Depends(authorization()),
+    session: AsyncSession = Depends(get_db),
+    skip: Annotated[int, Query(0, ge=0, description="Number of tasks to skip")] = 0,
+    limit: Annotated[int, Query(20, ge=1, le=100, description="Number of tasks to return")] = 20,
+) -> list[TaskResponse]:
+    """
+    Get all tasks for the current user with pagination.
+    
+    Tasks are sorted by update time (descending), showing most recently modified first.
+    
+    - **skip**: Number of tasks to skip (for pagination) - default: 0
+    - **limit**: Number of tasks to return (1-100) - default: 20
+    """
+    repo = TaskRepository(session)
+    tasks = await repo.get_user_tasks(user.id, skip=skip, limit=limit)
+    return tasks
 
 
 @requests_router.delete("/{task_id}", summary="Delete task from queue")
