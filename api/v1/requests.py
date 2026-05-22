@@ -1,5 +1,6 @@
 import json
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,12 +15,12 @@ from services.rabbitmq import publish_task
 requests_router = APIRouter(prefix="/requests", tags=["requests"])
 
 
-@requests_router.post("/", summary="Create HTTP request task", response_model=TaskResponse)
+@requests_router.post("/", summary="Create HTTP request task")
 async def request_create(
     task_data: TaskCreate,
     user: Annotated[User, Depends(authorization())],
     session: AsyncSession = Depends(get_db),
-):
+) -> TaskResponse:
     """
     Create a new HTTP request task.
     
@@ -50,8 +51,28 @@ async def request_create(
 
 
 @requests_router.get("/{task_id}", summary="Get task information")
-async def request_info():
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED)
+async def request_info(
+    task_id: UUID,
+    user: Annotated[User, Depends(authorization())],
+    session: AsyncSession = Depends(get_db),
+) -> TaskResponse:
+    """
+    Get task information by ID.
+    
+    Returns task details only if it belongs to the current user.
+    Returns 403 Forbidden if the task belongs to another user.
+    Returns 404 Not Found if the task does not exist.
+    """
+    repo = TaskRepository(session)
+    task = await repo.get_task_by_id(task_id)
+    
+    if task is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    
+    if task.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    
+    return task
 
 
 @requests_router.get("/", summary="Get current user tasks")

@@ -37,3 +37,17 @@ class TaskRepository:
         await self.session.commit()
         raw_task = query.fetchone()
         return TaskResponse.model_validate(raw_task)
+
+    async def get_task_by_id(self, task_id: UUID) -> Optional[TaskResponse]:
+        """Get task by ID"""
+        query = await self.session.execute(text("""
+            SELECT id, user_id, url, method, headers, body, status, attempt_count, max_attempts, result, created_at, updated_at
+            FROM tasks
+            WHERE id = :task_id
+        """).bindparams(
+            BindParameter("task_id", str(task_id), TEXT),
+        ))
+        raw_task = query.fetchone()
+        if raw_task is None:
+            return None
+        return TaskResponse.model_validate(raw_task)

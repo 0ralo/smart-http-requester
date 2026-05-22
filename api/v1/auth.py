@@ -8,6 +8,7 @@ from domain.auth import UserAlreadyExists, UnknownException, get_token, Password
     create_user, delete_token, refresh_token, get_user_info
 from middleware.auth import authorization
 from schemas import UserRegisterBody, UserRegisterResponse, UserLoginBody, AccessTokenResponse, User
+from schemas.auth import UserMe
 from services.database import get_db
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -81,7 +82,7 @@ async def auth_refresh(
 async def auth_verify(
     user: Annotated[User, Security(authorization())],
     session: AsyncSession = Depends(get_db),
-):
+) -> UserMe:
     """
     Endpoint allows to get info about a user. Returns username and token lifetime.
     """
