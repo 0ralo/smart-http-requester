@@ -4,7 +4,7 @@ import bcrypt
 
 
 def hash_password(password: str) -> bytes:
-    salt = bcrypt.gensalt(rounds=8)
+    salt = bcrypt.gensalt(rounds=12)
     return bcrypt.hashpw(password.encode(), salt)
 
 

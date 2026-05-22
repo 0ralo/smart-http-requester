@@ -1,13 +1,21 @@
 from typing import AsyncGenerator
 
 from sqlalchemy import text
+from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from config import settings
 
-password_part = f":{settings.postgres_password}" if settings.postgres_password else ""
+postgres_url = URL.create(
+    drivername="postgresql+psycopg",
+    username=settings.postgres_user,
+    password=settings.postgres_password,
+    host=settings.postgres_host,
+    port=settings.postgres_port,
+    database=settings.postgres_database,
+)
 engine = create_async_engine(
-    f"postgresql+psycopg://{settings.postgres_user}{password_part}@{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_database}",
+    postgres_url,
     pool_pre_ping=True,
     echo=True,
     future=True

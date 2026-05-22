@@ -71,6 +71,7 @@ class AuthRepository:
                 left join public.roles r
                     on r.id = u.role_id
                 where t.access_token = :access_token
+                  and t.valid_until > now()
             """).bindparams(
                 BindParameter("access_token", token, Uuid))
             )
