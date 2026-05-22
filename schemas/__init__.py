@@ -1,6 +1,7 @@
 
 from schemas.auth import UserRegisterBody, UserRegisterResponse, UserLoginBody, AccessTokenResponse, UserIdPassword, \
     User, UserMe
+from schemas.task import TaskCreate, TaskResponse
 
 __all__ = [
     "UserRegisterBody",
@@ -9,7 +10,9 @@ __all__ = [
     "AccessTokenResponse",
     "UserIdPassword",
     "User",
-    "UserMe"
+    "UserMe",
+    "TaskCreate",
+    "TaskResponse",
 ]
 
 
