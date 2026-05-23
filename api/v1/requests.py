@@ -10,6 +10,7 @@ from repository import TaskRepository
 from schemas import TaskCreate, TaskResponse, User, TaskUpdate
 from services.database import get_db
 from services.rabbitmq import publish_task
+from services.metrics import tasks_created_total, tasks_completed_total
 
 requests_router = APIRouter(prefix="/requests", tags=["requests"])
 
@@ -45,6 +46,9 @@ async def request_create(
         "task_id": str(task.id)
     })
     await publish_task(payload, attempts=task.max_attempts)
+    
+    # Record metric
+    tasks_created_total.inc()
     
     return task
 
@@ -129,6 +133,9 @@ async def request_delete(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Task cannot be canceled. Current status: {current_status}. Only pending tasks can be canceled."
         )
+    
+    # Record metric
+    tasks_completed_total.labels(status="canceled").inc()
     
     return task
 

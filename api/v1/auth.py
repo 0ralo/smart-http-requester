@@ -11,6 +11,7 @@ from middleware.auth import authorization
 from schemas import UserRegisterBody, UserRegisterResponse, UserLoginBody, AccessTokenResponse, User
 from schemas.auth import UserMe
 from services.database import get_db
+from services.metrics import auth_attempts_total
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -31,9 +32,12 @@ async def auth_register(
     """
     try:
         user = await create_user(session, data)
+        auth_attempts_total.labels(type="register", status="success").inc()
     except UserAlreadyExists:
+        auth_attempts_total.labels(type="register", status="conflict").inc()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT)
     except UnknownException:
+        auth_attempts_total.labels(type="register", status="error").inc()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return user
 
@@ -54,9 +58,12 @@ async def auth_login(
     """
     try:
         token = await get_token(session, data)
+        auth_attempts_total.labels(type="login", status="success").inc()
     except PasswordIsIncorrect:
+        auth_attempts_total.labels(type="login", status="unauthorized").inc()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     except UserDoesNotExists:
+        auth_attempts_total.labels(type="login", status="not_found").inc()
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return token
 

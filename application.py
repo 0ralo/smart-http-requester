@@ -7,6 +7,7 @@ from api.v1 import router as router_v1
 from services.database import database_ping
 from services.redis import close_redis, get_redis
 from services.rabbitmq import close_rabbitmq, get_rabbitmq
+from middleware.metrics import MetricsMiddleware
 
 
 @asynccontextmanager
@@ -41,4 +42,8 @@ app = FastAPI(
     lifespan=lifespan,
     openapi_url="/api/openapi.json"
 )
+
+# Add metrics middleware to collect HTTP metrics
+app.add_middleware(MetricsMiddleware)
+
 app.include_router(router_v1)
