@@ -24,7 +24,7 @@ CREATE TABLE tasks (
     method VARCHAR(10) DEFAULT 'GET',
     headers JSONB,
     body TEXT,
-    status VARCHAR(20) DEFAULT 'pending', -- pending, running, done, failed
+    status VARCHAR(20) DEFAULT 'pending', -- pending, running, done, failed, cancelled
     attempt_count INT DEFAULT 0,
     max_attempts INT DEFAULT 3,
     result JSONB,

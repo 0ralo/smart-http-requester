@@ -8,7 +8,7 @@ from starlette import status
 
 from core.auth import authorization
 from repository import TaskRepository
-from schemas import TaskCreate, TaskResponse, User
+from schemas import TaskCreate, TaskResponse, User, TaskUpdate
 from services.database import get_db
 from services.rabbitmq import publish_task
 
@@ -98,13 +98,85 @@ async def request_user_tasks(
 
 
 @requests_router.delete("/{task_id}", summary="Delete task from queue")
-async def request_delete():
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED)
+async def request_delete(
+    task_id: UUID,
+    user: Annotated[User, Depends(authorization())] = Depends(authorization()),
+    session: AsyncSession = Depends(get_db),
+) -> TaskResponse:
+    """
+    Cancel a task and remove it from the processing queue.
+    
+    Only tasks with 'pending' status can be canceled.
+    Sets the task status to 'canceled' and updates the modification time.
+    
+    Returns the updated task with 'canceled' status.
+    Returns 403 Forbidden if the task belongs to another user.
+    Returns 404 Not Found if the task does not exist.
+    Returns 400 Bad Request if the task is not in pending status.
+    """
+    repo = TaskRepository(session)
+    result = await repo.cancel_task(task_id)
+    
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    
+    task, task_user_id, current_status = result
+    
+    if task_user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    
+    if current_status != 'pending':
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Task cannot be canceled. Current status: {current_status}. Only pending tasks can be canceled."
+        )
+    
+    return task
 
 
 @requests_router.put("/{task_id}", summary="Change task data")
-async def request_update():
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED)
+async def request_update(
+    task_id: UUID,
+    task_data: TaskUpdate,
+    user: Annotated[User, Depends(authorization())] = Depends(authorization()),
+    session: AsyncSession = Depends(get_db),
+) -> TaskResponse:
+    """
+    Update task data.
+    
+    Only tasks with 'pending' status can be updated.
+    Can update: url, method, headers, body.
+    Cannot update: max_attempts (use when creating task).
+    
+    Returns the updated task.
+    Returns 403 Forbidden if the task belongs to another user.
+    Returns 404 Not Found if the task does not exist.
+    Returns 400 Bad Request if the task is not in pending status.
+    """
+    repo = TaskRepository(session)
+    result = await repo.update_task(
+        task_id=task_id,
+        url=task_data.url,
+        method=task_data.method,
+        headers=task_data.headers,
+        body=task_data.body,
+    )
+    
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    
+    task, task_user_id, current_status = result
+    
+    if task_user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    
+    if current_status != 'pending':
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Task cannot be updated. Current status: {current_status}. Only pending tasks can be updated."
+        )
+    
+    return task
 
 
 @requests_router.post("/batch", summary="Create multiple tasks")

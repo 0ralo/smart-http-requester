@@ -18,6 +18,13 @@ class TaskCreate(BaseModel):
     max_attempts: int = Field(default=5, le=20)
 
 
+class TaskUpdate(BaseModel):
+    url: str
+    method: str = "GET"
+    headers: Optional[dict] = None
+    body: Optional[str] = None
+
+
 class TaskResponse(BaseModelFromAttributes):
     id: UUID
     url: str
