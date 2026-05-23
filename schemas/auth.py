@@ -39,7 +39,7 @@ class UserRegisterResponse(BaseModelFromAttributes):
 
 class AccessTokenResponse(BaseModel):
     access_token: str
-    token_type: str
+    token_type: str = "Bearer"
 
 
 class UserIdPassword(BaseModelFromAttributes):

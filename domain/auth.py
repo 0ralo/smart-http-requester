@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 
 import psycopg
@@ -41,16 +42,33 @@ async def create_user(
 async def get_token(
     session: AsyncSession,
     data: UserLoginBody
-):
+) -> AccessTokenResponse:
     repo = AuthRepository(session)
     id_with_hash = await repo.get_user_id_password(data.username)
-    if id_with_hash.user_id is None:
+    if id_with_hash is None:
         raise UserDoesNotExists
     password_correct = check_password(data.password_hash, id_with_hash.password_hash)
     if not password_correct:
         raise PasswordIsIncorrect
     token = await repo.get_access_token_by_user_id(id_with_hash.user_id)
-    return AccessTokenResponse(token_type="Bearer", access_token=str(token))
+    return AccessTokenResponse(access_token=str(token))
+
+
+async def get_token_for_docs(
+    session: AsyncSession,
+    login: str,
+    password: str
+) -> AccessTokenResponse:
+    repo = AuthRepository(session)
+    id_with_hash = await repo.get_user_id_password(login)
+    if id_with_hash is None:
+        raise UserDoesNotExists
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    password_correct = check_password(password_hash, id_with_hash.password_hash)
+    if not password_correct:
+        raise PasswordIsIncorrect
+    token = await repo.get_access_token_by_user_id(id_with_hash.user_id)
+    return AccessTokenResponse(access_token=str(token))
 
 
 async def delete_token(

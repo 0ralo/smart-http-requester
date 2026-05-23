@@ -34,7 +34,7 @@ class AuthRepository:
                 select id as user_id, password_hash from users where username = :username
             """).bindparams(BindParameter("username", username, TEXT)))
             raw_data = query.fetchone()
-            return UserIdPassword.model_validate(raw_data)
+            return raw_data
 
 
     async def get_access_token_by_user_id(self, user_id) -> uuid.UUID:
