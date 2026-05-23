@@ -64,13 +64,110 @@ External API → result → PostgreSQL + Redis cache
 | Instant revocation | Opaque session tokens in Redis (no JWT blind spots)                |
 | Real‑time updates  | WebSocket status push                                              |
 | Rate limiting      | Sliding window (Redis)                                             |
+| Metrics collection | Prometheus endpoint at `/v1/metrics` with 10+ metric types         |
+| Dashboards         | Grafana integration for real-time visualization                    |
 | Observability      | Prometheus metrics (RPS, latency, queue depth, worker utilization) |
 
 ---
 
 ## Quick Start
 
-TODO
+### Prerequisites
+
+- Python 3.14+
+- PostgreSQL 15+
+- Redis 7+
+- RabbitMQ 3.12+
+- Docker & Docker Compose (optional, for Prometheus/Grafana)
+
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/0ralo/smart-http-requester.git
+cd smart-http-requester
+```
+
+2. **Create and activate virtual environment**
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. **Install dependencies**
+```bash
+pip install -e .
+```
+
+4. **Set up environment variables**
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+5. **Run migrations**
+```bash
+# Apply database migrations
+psql -U dev -d development -f migrations/0001_initialization.sql
+psql -U dev -d development -f migrations/0002_token_and_roles.sql
+```
+
+6. **Start the server**
+```bash
+python -m uvicorn application:app --reload
+```
+
+The API will be available at `http://localhost:8000`
+- API documentation: `http://localhost:8000/docs`
+- Metrics endpoint: `http://localhost:8000/v1/metrics`
+
+### Monitoring with Prometheus & Grafana
+
+#### Quick Start with Docker
+
+```bash
+# Make the script executable
+chmod +x start-metrics.sh
+
+# Start Prometheus and Grafana
+./start-metrics.sh
+```
+
+This will start:
+- **Prometheus**: http://localhost:9090
+- **Grafana**: http://localhost:3000 (admin/admin)
+
+#### Manual Setup
+
+1. **Update Prometheus configuration**
+```bash
+# Edit prometheus.yml with your app URL
+```
+
+2. **Start Prometheus**
+```bash
+prometheus --config.file=prometheus.yml
+```
+
+3. **View metrics**
+```bash
+# Via HTTP endpoint
+curl http://localhost:8000/v1/metrics
+
+# In Prometheus UI
+# - Query: http_requests_total
+# - Query: http_request_duration_seconds
+```
+
+For detailed Prometheus metrics documentation, see [PROMETHEUS_METRICS.md](PROMETHEUS_METRICS.md)
+
+### Testing
+
+Run the metrics tests:
+```bash
+chmod +x test-metrics.sh
+./test-metrics.sh
+```
 
 Why Opaque Tokens Instead of JWT?
 This project uses Redis‑backed opaque sessions for authentication because:
