@@ -1,9 +1,9 @@
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import text, BindParameter, TEXT, Integer, JSONB
+from sqlalchemy import text, BindParameter, TEXT, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.dialects.postgresql import UUID as UUIDType
+from sqlalchemy.dialects.postgresql import UUID as UUIDType, JSONB
 
 from schemas import TaskResponse
 

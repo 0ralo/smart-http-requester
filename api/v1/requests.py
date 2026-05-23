@@ -2,11 +2,10 @@ import json
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette import status
 
-from core.auth import authorization
+from middleware.auth import authorization
 from repository import TaskRepository
 from schemas import TaskCreate, TaskResponse, User, TaskUpdate
 from services.database import get_db
@@ -53,7 +52,7 @@ async def request_create(
 @requests_router.get("/{task_id}", summary="Get task information")
 async def request_info(
     task_id: UUID,
-    user: Annotated[User, Depends(authorization())] = Depends(authorization()),
+    user: Annotated[User, Depends(authorization())],
     session: AsyncSession = Depends(get_db),
 ) -> TaskResponse:
     """
@@ -79,10 +78,10 @@ async def request_info(
 
 @requests_router.get("/", summary="Get current user tasks")
 async def request_user_tasks(
-    user: Annotated[User, Depends(authorization())] = Depends(authorization()),
+    user: Annotated[User, Depends(authorization())],
     session: AsyncSession = Depends(get_db),
-    skip: Annotated[int, Query(0, ge=0, description="Number of tasks to skip")] = 0,
-    limit: Annotated[int, Query(20, ge=1, le=100, description="Number of tasks to return")] = 20,
+    skip: Annotated[int, Query(ge=0, description="Number of tasks to skip")] = 0,
+    limit: Annotated[int, Query(ge=1, le=100, description="Number of tasks to return")] = 20,
 ) -> list[TaskResponse]:
     """
     Get all tasks for the current user with pagination.
@@ -100,7 +99,7 @@ async def request_user_tasks(
 @requests_router.delete("/{task_id}", summary="Delete task from queue")
 async def request_delete(
     task_id: UUID,
-    user: Annotated[User, Depends(authorization())] = Depends(authorization()),
+    user: Annotated[User, Depends(authorization())],
     session: AsyncSession = Depends(get_db),
 ) -> TaskResponse:
     """
@@ -138,7 +137,7 @@ async def request_delete(
 async def request_update(
     task_id: UUID,
     task_data: TaskUpdate,
-    user: Annotated[User, Depends(authorization())] = Depends(authorization()),
+    user: Annotated[User, Depends(authorization())],
     session: AsyncSession = Depends(get_db),
 ) -> TaskResponse:
     """

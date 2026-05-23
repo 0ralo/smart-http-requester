@@ -40,6 +40,5 @@ app = FastAPI(
     title="HTTP-requester API documentation",
     lifespan=lifespan,
     openapi_url="/api/openapi.json"
-
 )
 app.include_router(router_v1)

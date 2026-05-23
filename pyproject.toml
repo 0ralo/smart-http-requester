@@ -10,6 +10,8 @@ dependencies = [
     "granian>=2.7.3",
     "loguru>=0.7.3",
     "psycopg[binary]>=3.3.3",
+    "pydantic-settings>=2.14.1",
+    "python-multipart>=0.0.29",
     "redis>=7.4.0",
     "sqlalchemy>=2.0.49",
 ]

@@ -2,10 +2,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Depends, Response, status
 from fastapi.params import Security
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.auth import UserAlreadyExists, UnknownException, get_token, PasswordIsIncorrect, UserDoesNotExists, \
-    create_user, delete_token, refresh_token, get_user_info
+    create_user, delete_token, refresh_token, get_user_info, get_token_for_docs
 from middleware.auth import authorization
 from schemas import UserRegisterBody, UserRegisterResponse, UserLoginBody, AccessTokenResponse, User
 from schemas.auth import UserMe
@@ -121,4 +122,18 @@ async def auth_me():
     Will support third-party authentication providers (Google, GitHub, etc.) in the future.
     """
     raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED,)
+
+
+@auth_router.post("/token", include_in_schema=False)
+async def token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    session: AsyncSession = Depends(get_db),
+) -> AccessTokenResponse:
+    try:
+        token = await get_token_for_docs(session, form_data.username, form_data.password)
+    except PasswordIsIncorrect:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    except UserDoesNotExists:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return token
 

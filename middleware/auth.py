@@ -10,7 +10,7 @@ from repository import AuthRepository
 from schemas import User
 from services.database import get_db
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/auth/token")
 
 def is_str_uuid(value: str) -> bool:
     try:
