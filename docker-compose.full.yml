@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:18-alpine
+    image: postgres:17-alpine
     container_name: smart-http-requester-postgres
     environment:
       POSTGRES_USER: dev
@@ -75,6 +75,7 @@ services:
       RABBITMQ_USER: guest
       RABBITMQ_PASSWORD: guest
       RABBITMQ_VHOST: ""
+      DEBUG: true
     volumes:
       - ./logs:/app/logs
       - .:/app
