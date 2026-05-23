@@ -3,7 +3,7 @@ insert into roles (title, permissions) values ('user', 31), ('moderator', 255), 
 create table tokens(
     user_id integer primary key references users(id) on delete cascade,
     access_token uuid default gen_random_uuid(),
-    valid_until timestamptz,
+    valid_until timestamptz
 );
 
 create function get_or_create_user_token(user_id integer) returns uuid

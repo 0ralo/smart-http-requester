@@ -41,7 +41,6 @@ app = FastAPI(
     title="HTTP-requester API documentation",
     lifespan=lifespan,
     openapi_url="/api/openapi.json"
-
 )
 
 # Add metrics middleware to collect HTTP metrics
