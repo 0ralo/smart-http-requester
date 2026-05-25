@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ConfigDict
 
 
 class UserCredentials(BaseModel):
@@ -16,8 +16,9 @@ class UserCredentials(BaseModel):
 
 
 class BaseModelFromAttributes(BaseModel):
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True
+    )
 
 
 class UserRegisterBody(UserCredentials):
@@ -32,9 +33,6 @@ class UserLoginBody(UserRegisterBody):
 class UserRegisterResponse(BaseModelFromAttributes):
     user_id: int
     username: str
-
-    class Config:
-        from_attributes = True
 
 
 class AccessTokenResponse(BaseModel):

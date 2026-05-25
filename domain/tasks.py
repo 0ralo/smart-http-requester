@@ -26,7 +26,7 @@ class InvalidTaskStatusError(Exception):
 
 
 async def create_request_task(
-    user_id: UUID,
+    user_id: int,
     task_data: TaskCreate,
     session: AsyncSession,
 ) -> TaskResponse:
@@ -62,7 +62,7 @@ async def create_request_task(
 
 
 async def create_request_tasks_batch(
-    user_id: UUID,
+    user_id: int,
     tasks_data: list[TaskCreate],
     session: AsyncSession,
 ) -> list[TaskResponse]:
@@ -88,7 +88,7 @@ async def create_request_tasks_batch(
 
 async def get_request_task(
     task_id: UUID,
-    user_id: UUID,
+    user_id: int,
     session: AsyncSession,
 ) -> TaskResponse:
     """
@@ -121,7 +121,7 @@ async def get_request_task(
 
 
 async def get_user_request_tasks(
-    user_id: UUID,
+    user_id: int,
     skip: int,
     limit: int,
     session: AsyncSession,
@@ -145,7 +145,7 @@ async def get_user_request_tasks(
 
 async def cancel_request_task(
     task_id: UUID,
-    user_id: UUID,
+    user_id: int,
     session: AsyncSession,
 ) -> TaskResponse:
     """
@@ -187,7 +187,7 @@ async def cancel_request_task(
 
 async def update_request_task(
     task_id: UUID,
-    user_id: UUID,
+    user_id: int,
     task_data: TaskUpdate,
     session: AsyncSession,
 ) -> TaskResponse:

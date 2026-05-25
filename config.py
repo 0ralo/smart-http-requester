@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -19,10 +19,12 @@ class Settings(BaseSettings):
     rabbitmq_password: str = "guest"
     rabbitmq_vhost: str = ""
 
-    class Config:
-        env_prefix = ""
-        env_file = ".env"
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_prefix="",
+        env_file=".env",
+        case_sensitive=False,
+    )
+
 
 
 settings = Settings()
