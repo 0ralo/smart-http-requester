@@ -149,49 +149,14 @@ docker-compose -f docker-compose-metrics.yml up -d
 
 #### Quick Start with Docker
 
-```bash
-# Make the script executable
-chmod +x start-metrics.sh
-
-# Start Prometheus and Grafana
-./start-metrics.sh
-```
 
 This will start:
 - **Prometheus**: http://localhost:9090
 - **Grafana**: http://localhost:3000 (admin/admin)
 
-#### Manual Setup
-
-1. **Update Prometheus configuration**
-```bash
-# Edit prometheus.yml with your app URL
-```
-
-2. **Start Prometheus**
-```bash
-prometheus --config.file=prometheus.yml
-```
-
-3. **View metrics**
-```bash
-# Via HTTP endpoint
-curl http://localhost:8000/v1/metrics
-
-# In Prometheus UI
-# - Query: http_requests_total
-# - Query: http_request_duration_seconds
-```
 
 For detailed Prometheus metrics documentation, see [PROMETHEUS_METRICS.md](PROMETHEUS_METRICS.md)
 
-### Testing
-
-Run the metrics tests:
-```bash
-chmod +x test-metrics.sh
-./test-metrics.sh
-```
 
 Why Opaque Tokens Instead of JWT?
 This project uses Redis‑backed opaque sessions for authentication because:
