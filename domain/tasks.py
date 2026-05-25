@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from repository import TaskRepository
 from schemas import TaskCreate, TaskResponse, TaskUpdate
 from services.rabbitmq import publish_task
+from services.metrics import tasks_created_total, tasks_completed_total
 
 
 # Custom exceptions
@@ -56,7 +57,33 @@ async def create_request_task(
     payload = json.dumps({"task_id": str(task.id)})
     await publish_task(payload, attempts=task.max_attempts)
     
+    tasks_created_total.inc()
     return task
+
+
+async def create_request_tasks_batch(
+    user_id: UUID,
+    tasks_data: list[TaskCreate],
+    session: AsyncSession,
+) -> list[TaskResponse]:
+    """
+    Create multiple request tasks and publish them to the queue.
+    """
+    if len(tasks_data) == 0:
+        raise ValueError("At least one task must be provided.")
+
+    repo = TaskRepository(session)
+    tasks = await repo.create_tasks_batch(
+        user_id=user_id,
+        tasks_data=tasks_data,
+    )
+
+    for task in tasks:
+        payload = json.dumps({"task_id": str(task.id)})
+        await publish_task(payload, attempts=task.max_attempts)
+
+    tasks_created_total.inc(len(tasks))
+    return tasks
 
 
 async def get_request_task(
@@ -153,7 +180,8 @@ async def cancel_request_task(
             f"Task cannot be canceled. Current status: {current_status}. "
             f"Only pending tasks can be canceled."
         )
-    
+
+    tasks_completed_total.labels(status="canceled").inc()
     return task
 
 

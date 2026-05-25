@@ -1,4 +1,3 @@
-import json
 from typing import Annotated
 from uuid import UUID
 
@@ -6,11 +5,19 @@ from fastapi import APIRouter, HTTPException, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from middleware.auth import authorization
-from repository import TaskRepository
+from domain.tasks import (
+    create_request_task,
+    create_request_tasks_batch,
+    get_request_task,
+    get_user_request_tasks,
+    cancel_request_task,
+    update_request_task,
+    TaskNotFoundError,
+    AccessDeniedError,
+    InvalidTaskStatusError,
+)
 from schemas import TaskCreate, TaskResponse, User, TaskUpdate
 from services.database import get_db
-from services.rabbitmq import publish_task
-from services.metrics import tasks_created_total, tasks_completed_total
 
 requests_router = APIRouter(prefix="/requests", tags=["requests"])
 
@@ -30,26 +37,11 @@ async def request_create(
     - **body**: Optional request body
     - **max_attempts**: Maximum number of retry attempts (1-20) - default: 5
     """
-    # Create task in database
-    repo = TaskRepository(session)
-    task = await repo.create_task(
-        user_id=user.id,
-        url=task_data.url,
-        method=task_data.method,
-        headers=task_data.headers,
-        body=task_data.body,
-        max_attempts=task_data.max_attempts,
-    )
-    
-    # Publish task to RabbitMQ queue with max_attempts
-    payload = json.dumps({
-        "task_id": str(task.id)
-    })
-    await publish_task(payload, attempts=task.max_attempts)
-    
-    # Record metric
-    tasks_created_total.inc()
-    
+    try:
+        task = await create_request_task(user.id, task_data, session)
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+
     return task
 
 
@@ -66,17 +58,13 @@ async def request_info(
     Returns 403 Forbidden if the task belongs to another user.
     Returns 404 Not Found if the task does not exist.
     """
-    repo = TaskRepository(session)
-    result = await repo.get_task_by_id(task_id)
-    
-    if result is None:
+    try:
+        task = await get_request_task(task_id, user.id, session)
+    except TaskNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    
-    task, task_user_id = result
-    
-    if task_user_id != user.id:
+    except AccessDeniedError:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-    
+
     return task
 
 
@@ -95,8 +83,7 @@ async def request_user_tasks(
     - **skip**: Number of tasks to skip (for pagination) - default: 0
     - **limit**: Number of tasks to return (1-100) - default: 20
     """
-    repo = TaskRepository(session)
-    tasks = await repo.get_user_tasks(user.id, skip=skip, limit=limit)
+    tasks = await get_user_request_tasks(user.id, skip=skip, limit=limit, session=session)
     return tasks
 
 
@@ -117,26 +104,15 @@ async def request_delete(
     Returns 404 Not Found if the task does not exist.
     Returns 400 Bad Request if the task is not in pending status.
     """
-    repo = TaskRepository(session)
-    result = await repo.cancel_task(task_id)
-    
-    if result is None:
+    try:
+        task = await cancel_request_task(task_id, user.id, session)
+    except TaskNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    
-    task, task_user_id, current_status = result
-    
-    if task_user_id != user.id:
+    except AccessDeniedError:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-    
-    if current_status != 'pending':
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Task cannot be canceled. Current status: {current_status}. Only pending tasks can be canceled."
-        )
-    
-    # Record metric
-    tasks_completed_total.labels(status="canceled").inc()
-    
+    except InvalidTaskStatusError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
     return task
 
 
@@ -159,35 +135,37 @@ async def request_update(
     Returns 404 Not Found if the task does not exist.
     Returns 400 Bad Request if the task is not in pending status.
     """
-    repo = TaskRepository(session)
-    result = await repo.update_task(
-        task_id=task_id,
-        url=task_data.url,
-        method=task_data.method,
-        headers=task_data.headers,
-        body=task_data.body,
-    )
-    
-    if result is None:
+    try:
+        task = await update_request_task(task_id, user.id, task_data, session)
+    except TaskNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    
-    task, task_user_id, current_status = result
-    
-    if task_user_id != user.id:
+    except AccessDeniedError:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-    
-    if current_status != 'pending':
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Task cannot be updated. Current status: {current_status}. Only pending tasks can be updated."
-        )
-    
+    except InvalidTaskStatusError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
     return task
 
 
 @requests_router.post("/batch", summary="Create multiple tasks")
-async def request_create_batch():
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED)
+async def request_create_batch(
+    tasks_data: list[TaskCreate],
+    user: Annotated[User, Depends(authorization())],
+    session: AsyncSession = Depends(get_db),
+) -> list[TaskResponse]:
+    """
+    Create multiple HTTP request tasks in one database transaction.
+
+    Accepts a JSON array of task objects and returns the created tasks.
+    """
+    try:
+        tasks = await create_request_tasks_batch(user.id, tasks_data, session)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+
+    return tasks
 
 
 @requests_router.post("/{task_id}/ws", summary="Get websocket real time status of task")

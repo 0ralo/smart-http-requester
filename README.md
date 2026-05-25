@@ -72,6 +72,8 @@ External API → result → PostgreSQL + Redis cache
 
 ## Quick Start
 
+> **Windows users with Docker?** See the detailed [Windows Setup Guide](WINDOWS_SETUP.md) with 3 easy launch options!
+
 ### Prerequisites
 
 - Python 3.14+
@@ -120,6 +122,28 @@ python -m uvicorn application:app --reload
 The API will be available at `http://localhost:8000`
 - API documentation: `http://localhost:8000/docs`
 - Metrics endpoint: `http://localhost:8000/v1/metrics`
+
+### 🪟 Windows Setup with Docker
+
+For Windows users, there are 3 easy options:
+
+1. **Full Stack** (API + Postgres + Redis + RabbitMQ + Prometheus + Grafana)
+```bash
+docker-compose -f docker-compose.full.yml up -d
+```
+
+2. **Metrics + Local API** (Prometheus + Grafana in Docker, API on your machine)
+```bash
+docker-compose -f docker-compose-metrics.yml up -d
+python -m uvicorn application:app
+```
+
+3. **Just Monitoring** (Prometheus + Grafana)
+```bash
+docker-compose -f docker-compose-metrics.yml up -d
+```
+
+**→ See [WINDOWS_SETUP.md](WINDOWS_SETUP.md) for detailed instructions**
 
 ### Monitoring with Prometheus & Grafana
 

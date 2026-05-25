@@ -5,7 +5,7 @@ from sqlalchemy import text, BindParameter, TEXT, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import UUID as UUIDType, JSONB
 
-from schemas import TaskResponse
+from schemas import TaskCreate, TaskResponse
 
 
 class TaskRepository:
@@ -34,7 +34,6 @@ class TaskRepository:
             BindParameter("body", body, TEXT),
             BindParameter("max_attempts", max_attempts, Integer),
         ))
-        await self.session.commit()
         raw_task = query.fetchone()
         return TaskResponse.model_validate(raw_task)
 
@@ -54,6 +53,39 @@ class TaskRepository:
         user_id = raw_task.user_id
         task = TaskResponse.model_validate(raw_task)
         return task, user_id
+
+    async def create_tasks_batch(
+        self,
+        user_id: int,
+        tasks_data: list[TaskCreate],
+    ) -> list[TaskResponse]:
+        """Create multiple tasks in a single database transaction."""
+        if not tasks_data:
+            return []
+
+        values = []
+        bindparams = [BindParameter("user_id", user_id, Integer)]
+
+        for idx, task in enumerate(tasks_data):
+            values.append(
+                f"(:user_id, :url_{idx}, :method_{idx}, :headers_{idx}, :body_{idx}, :max_attempts_{idx}, 'pending', 0)"
+            )
+            bindparams.extend([
+                BindParameter(f"url_{idx}", task.url, TEXT),
+                BindParameter(f"method_{idx}", task.method, TEXT),
+                BindParameter(f"headers_{idx}", task.headers, JSONB),
+                BindParameter(f"body_{idx}", task.body, TEXT),
+                BindParameter(f"max_attempts_{idx}", task.max_attempts, Integer),
+            ])
+
+        query = await self.session.execute(text(f"""
+            INSERT INTO tasks (user_id, url, method, headers, body, max_attempts, status, attempt_count)
+            VALUES {', '.join(values)}
+            RETURNING id, user_id, url, method, headers, body, status, attempt_count, max_attempts, result, created_at, updated_at
+        """).bindparams(*bindparams))
+
+        raw_tasks = query.fetchall()
+        return [TaskResponse.model_validate(task) for task in raw_tasks]
 
     async def get_user_tasks(self, user_id: int, skip: int = 0, limit: int = 20) -> list[TaskResponse]:
         """Get all tasks for a user with pagination, sorted by updated_at (desc) or created_at"""
@@ -100,7 +132,6 @@ class TaskRepository:
             """).bindparams(
                 BindParameter("task_id", task_id, UUIDType),
             ))
-            await self.session.commit()
         
         # Get updated task info
         query = await self.session.execute(text("""
@@ -154,7 +185,6 @@ class TaskRepository:
             BindParameter("headers", headers, JSONB),
             BindParameter("body", body, TEXT),
         ))
-        await self.session.commit()
         
         # Get updated task info
         query = await self.session.execute(text("""
