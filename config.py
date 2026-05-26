@@ -13,7 +13,7 @@ class Settings(BaseSettings):
 
     postgres_host: str = "127.0.0.1"
     postgres_port: int = 5432
-    postgres_database: str = "development"
+    postgres_database: str = "dev"
     postgres_user: str = "dev"
     postgres_password: str | None = None
     postgres_use_ssl: bool = False

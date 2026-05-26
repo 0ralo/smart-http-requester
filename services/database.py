@@ -7,27 +7,39 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from config import settings
 import ssl
 
-postgres_url = URL.create(
-    drivername="postgresql+psycopg",
-    username=settings.postgres_user,
-    password=settings.postgres_password,
-    host=settings.postgres_host,
-    port=settings.postgres_port,
-    database=settings.postgres_database,
-)
-connect_args = {}
-if settings.postgres_use_ssl and settings.postgres_ca_cert:
-    ssl_ctx = ssl.create_default_context(cafile=settings.postgres_ca_cert)
-    if settings.postgres_cert and settings.postgres_key:
-        ssl_ctx.load_cert_chain(certfile=settings.postgres_cert, keyfile=settings.postgres_key)
-    connect_args = {"ssl": ssl_ctx}
+# Build the URL with SSL parameters in the query string
+if settings.postgres_use_ssl:
+    postgres_url = URL.create(
+        drivername="postgresql+psycopg",
+        username=settings.postgres_user,
+        password=settings.postgres_password,
+        host=settings.postgres_host,
+        port=settings.postgres_port,
+        database=settings.postgres_database,
+        query={
+            "sslmode": "verify-ca",  # or "require" for simpler SSL
+            "sslrootcert": settings.postgres_ca_cert,
+            # Uncomment if using client certificates:
+            # "sslcert": settings.postgres_cert,
+            # "sslkey": settings.postgres_key,
+        }
+    )
+else:
+    postgres_url = URL.create(
+        drivername="postgresql+psycopg",
+        username=settings.postgres_user,
+        password=settings.postgres_password,
+        host=settings.postgres_host,
+        port=settings.postgres_port,
+        database=settings.postgres_database,
+    )
 
+# Don't pass any SSL-related connect_args for psycopg3
 engine = create_async_engine(
     postgres_url,
     pool_pre_ping=True,
     echo=True,
     future=True,
-    connect_args=connect_args if connect_args else None,
 )
 
 async_session = async_sessionmaker(

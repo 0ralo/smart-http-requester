@@ -2,12 +2,12 @@ version: '3.8'
 
 services:
   certs-generator:
-    image: alpine:3.18
+    image: alpine/openssl:latest
     container_name: smart-http-requester-certs-generator
     volumes:
       - certs:/certs
       - ./docker/generate-certs.sh:/generate-certs.sh:ro
-    entrypoint: ["sh", "/generate-certs.sh"]
+    entrypoint: [ "sh", "/generate-certs.sh" ]
     restart: "no"
 
   postgres:
@@ -16,7 +16,7 @@ services:
     environment:
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev
-      POSTGRES_DB: development
+      POSTGRES_DB: dev
     ports:
       - "5432:5432"
     volumes:
@@ -28,10 +28,13 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev"]
+      test: [ "CMD-SHELL", "pg_isready -U dev" ]
       interval: 10s
       timeout: 5s
       retries: 5
+    depends_on:
+      certs-generator:
+        condition: service_completed_successfully
 
   redis:
     image: redis:7-alpine
@@ -42,11 +45,27 @@ services:
       - redis_data:/data
       - certs:/certs
     command: >
-      sh -c "if [ -f /certs/redis.crt ]; then redis-server --tls-port 6379 --port 0 --tls-cert-file /certs/redis.crt --tls-key-file /certs/redis.key --tls-ca-cert-file /certs/ca.crt --tls-auth-clients no; else redis-server; fi"
+      redis-server --tls-port 6379 --port 0
+      --tls-cert-file /certs/redis.crt
+      --tls-key-file /certs/redis.key
+      --tls-ca-cert-file /certs/ca.crt
+      --tls-auth-clients no
     networks:
       - app-network
+    depends_on:
+      certs-generator:
+        condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "--tls",
+          "--cacert", "/certs/ca.crt",
+          "--cert", "/certs/redis.crt",
+          "--key", "/certs/redis.key",
+          "ping"
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -55,10 +74,8 @@ services:
     image: rabbitmq:3.12-management-alpine
     container_name: smart-http-requester-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    
-      - "15672:15672"
+      RABBITMQ_DEFAULT_USER: administrator
+      RABBITMQ_DEFAULT_PASS: P@ssw0rd
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - certs:/etc/rabbitmq/certs
@@ -68,8 +85,18 @@ services:
       - "15672:15672"
     networks:
       - app-network
+    user: "0:0"  # Запуск от root
+    command: >
+      sh -c "
+        chown -R 999:999 /etc/rabbitmq/certs &&
+        ls -la /etc/rabbitmq/certs/ | grep -E 'ca.crt|rabbitmq.(crt|key)' &&
+        rabbitmq-server
+      "
+    depends_on:
+      certs-generator:
+        condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -98,6 +125,9 @@ services:
       POSTGRES_USE_SSL: "true"
       REDIS_USE_SSL: "true"
       RABBITMQ_USE_SSL: "true"
+      REDIS_CACERT: /certs/ca.crt
+      REDIS_CERT: /certs/redis.crt
+      REDIS_KEY: /certs/redis.key
     volumes:
       - ./logs:/app/logs
       - .:/app
