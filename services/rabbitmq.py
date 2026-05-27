@@ -1,4 +1,3 @@
-import ssl
 from typing import Union
 
 import aio_pika
@@ -19,14 +18,8 @@ MAX_ATTEMPTS_LIMIT = 20
 async def get_rabbitmq():
     global _rabbitmq
     if _rabbitmq is None or _rabbitmq.is_closed:
-        ssl_ctx = None
-        if settings.rabbitmq_use_ssl and settings.rabbitmq_ca_cert:
-            ssl_ctx = ssl.create_default_context(cafile=settings.rabbitmq_ca_cert)
-            if settings.rabbitmq_cert and settings.rabbitmq_key:
-                ssl_ctx.load_cert_chain(certfile=settings.rabbitmq_cert, keyfile=settings.rabbitmq_key)
-
         url = f"amqp://{settings.rabbitmq_user}:{settings.rabbitmq_password}@{settings.rabbitmq_host}:{settings.rabbitmq_port}/{settings.rabbitmq_vhost}"
-        _rabbitmq = await aio_pika.connect_robust(url, ssl=ssl_ctx)
+        _rabbitmq = await aio_pika.connect_robust(url)
     return _rabbitmq
 
 

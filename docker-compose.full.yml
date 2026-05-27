@@ -1,15 +1,6 @@
 version: '3.8'
 
 services:
-  certs-generator:
-    image: alpine:3.18
-    container_name: smart-http-requester-certs-generator
-    volumes:
-      - certs:/certs
-      - ./docker/generate-certs.sh:/generate-certs.sh:ro
-    entrypoint: ["sh", "/generate-certs.sh"]
-    restart: "no"
-
   postgres:
     image: postgres:17-alpine
     container_name: smart-http-requester-postgres
@@ -22,13 +13,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./migrations:/docker-entrypoint-initdb.d
-      - certs:/certs
-    command: >
-      sh -c "if [ -f /certs/postgres.crt ]; then cp /certs/postgres.crt /var/lib/postgresql/data/server.crt && cp /certs/postgres.key /var/lib/postgresql/data/server.key && chmod 600 /var/lib/postgresql/data/server.key && echo \"ssl = on\" >> /var/lib/postgresql/data/postgresql.conf; fi && docker-entrypoint.sh postgres"
+    command: ["docker-entrypoint.sh", "postgres"]
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev"]
+      test: ["CMD-SHELL", "pg_isready -U dev -d development"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -40,9 +29,7 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-      - certs:/certs
-    command: >
-      sh -c "if [ -f /certs/redis.crt ]; then redis-server --tls-port 6379 --port 0 --tls-cert-file /certs/redis.crt --tls-key-file /certs/redis.key --tls-ca-cert-file /certs/ca.crt --tls-auth-clients no; else redis-server; fi"
+    command: ["redis-server"]
     networks:
       - app-network
     healthcheck:
@@ -57,14 +44,10 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-    
-      - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - certs:/etc/rabbitmq/certs
-      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     ports:
-      - "5671:5671"
+      - "5672:5672"
       - "15672:15672"
     networks:
       - app-network
@@ -90,18 +73,14 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5671
+      RABBITMQ_PORT: 5672
       RABBITMQ_USER: guest
       RABBITMQ_PASSWORD: guest
       RABBITMQ_VHOST: ""
       DEBUG: true
-      POSTGRES_USE_SSL: "true"
-      REDIS_USE_SSL: "true"
-      RABBITMQ_USE_SSL: "true"
     volumes:
       - ./logs:/app/logs
       - .:/app
-      - certs:/certs:ro
     networks:
       - app-network
     depends_on:
@@ -154,7 +133,6 @@ volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
-  certs:
   prometheus_data:
   grafana_data:
 
