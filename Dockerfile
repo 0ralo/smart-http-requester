@@ -1,24 +1,26 @@
-FROM python:3.14-slim
+FROM python:3.14-alpine
 
 WORKDIR /app
 
-# Установить системные зависимости
+# Install system requirements
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Копировать зависимости
+# Copy requirements list
 COPY pyproject.toml .
 
-# Установить Python зависимости
+# Install requirements
 RUN pip install --no-cache-dir -e .
 
-# Копировать приложение
+# Copy app
 COPY . .
 
-# Создать директорию для логов
+# Create logs directory
 RUN mkdir -p logs
 
-# Запустить приложение
-CMD ["python", "-m", "uvicorn", "application:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# Run app
+#CMD ["python", "-m", "uvicorn", "application:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+CMD ["python", "-m", "granian", "--interface", "asgi", "application:app", "--workers", "2", "--host", "0.0.0.0", "--port", "8000"]
