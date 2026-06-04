@@ -1,10 +1,10 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Depends, Query, status
+from fastapi import APIRouter, HTTPException, Depends, Query, status, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from middleware.auth import authorization
+from middleware.auth import authorization, is_str_uuid
 from domain.tasks import (
     create_request_task,
     create_request_tasks_batch,
@@ -16,8 +16,29 @@ from domain.tasks import (
     AccessDeniedError,
     InvalidTaskStatusError,
 )
+from repository import AuthRepository
 from schemas import TaskCreate, TaskResponse, User, TaskUpdate
-from services.database import get_db
+from services.database import get_db, async_session
+from services.redis import get_redis
+import json
+
+
+async def _get_token_from_websocket(websocket: WebSocket) -> str | None:
+    auth_header = websocket.headers.get("authorization")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        return auth_header.split(" ", 1)[1].strip()
+    return websocket.query_params.get("token")
+
+
+async def _authenticate_websocket(websocket: WebSocket) -> User | None:
+    token = await _get_token_from_websocket(websocket)
+    if token is None or not is_str_uuid(token):
+        return None
+
+    async with async_session() as session:
+        repo = AuthRepository(session)
+        user = await repo.get_user_by_token(token)
+    return User.model_validate(user) if user is not None else None
 
 requests_router = APIRouter(prefix="/requests", tags=["requests"])
 
@@ -168,6 +189,57 @@ async def request_create_batch(
     return tasks
 
 
-@requests_router.post("/{task_id}/ws", summary="Get websocket real time status of task")
-async def request_websocket():
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED)
+@requests_router.websocket("/{task_id}/ws")
+async def request_websocket(task_id: UUID, websocket: WebSocket):
+    """Websocket endpoint for real time status updates of a single task."""
+    await websocket.accept()
+
+    user = await _authenticate_websocket(websocket)
+    if user is None:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    try:
+        async with async_session() as session:
+            await get_request_task(task_id, user.id, session)
+    except TaskNotFoundError:
+        await websocket.close(code=status.WS_1011_INTERNAL_ERROR)
+        return
+    except AccessDeniedError:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    redis = await get_redis()
+    pubsub = redis.pubsub()
+    await pubsub.subscribe("tasks.status")
+
+    try:
+        async for message in pubsub.listen():
+            if message is None:
+                continue
+            if message.get("type") != "message":
+                continue
+            data = message.get("data")
+            if isinstance(data, (bytes, bytearray)):
+                try:
+                    payload = json.loads(data.decode())
+                except Exception:
+                    continue
+            else:
+                try:
+                    payload = json.loads(str(data))
+                except Exception:
+                    continue
+
+            if payload.get("task_id") != str(task_id):
+                continue
+
+            await websocket.send_text(json.dumps(payload))
+    except WebSocketDisconnect:
+        pass
+    finally:
+        try:
+            await pubsub.unsubscribe("tasks.status")
+            await pubsub.close()
+        except Exception:
+            pass

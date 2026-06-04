@@ -1,63 +1,42 @@
 import asyncio
-import json
-
 import asyncpg
 
 from config import settings
 from services.redis import get_redis
 
-# Global reference to redis for the listener callback
 _redis_for_listener = None
 
 
 async def start_pg_listener(app):
-    """Background task: listen to Postgres NOTIFY for task status changes.
-    
-    Connects to Postgres using asyncpg and listens to 'task_status_change' channel.
-    Publishes received notifications to Redis 'tasks.status' channel.
-    """
+    """Background task: listen to Postgres NOTIFY and publish task status updates to Redis."""
     global _redis_for_listener
-    
-    postgres_dsn = f"postgresql://{settings.postgres_user}:{settings.postgres_password}@{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_database}"
-    
+
     conn = None
     redis = None
-    
+
+    async def connect():
+        return await asyncpg.connect(
+            host=settings.postgres_host,
+            port=settings.postgres_port,
+            user=settings.postgres_user,
+            password=settings.postgres_password,
+            database=settings.postgres_database,
+        )
+
     while True:
         try:
-            # connect to postgres if needed
             if conn is None:
-                try:
-                    conn = await asyncpg.connect(postgres_dsn)
-                    # add listener for task status changes
-                    conn.add_listener('task_status_change', _on_task_status_change)
-                except asyncio.CancelledError:
-                    raise
-                except Exception as e:
-                    conn = None
-                    await asyncio.sleep(2)
-                    continue
-            
-            # get redis connection if needed
+                conn = await connect()
+                conn.add_listener("task_status_change", _on_task_status_change)
+
             if redis is None:
-                try:
-                    redis = await get_redis()
-                    _redis_for_listener = redis
-                except Exception:
-                    redis = None
-                    await asyncio.sleep(2)
-                    continue
-            
-            # keep connection alive
-            try:
-                await asyncio.sleep(10)
-            except asyncio.CancelledError:
-                break
-            
+                redis = await get_redis()
+                _redis_for_listener = redis
+
+            await asyncio.sleep(10)
         except asyncio.CancelledError:
             break
         except Exception:
-            # unexpected error, reconnect
             if conn is not None:
                 try:
                     await conn.close()
@@ -65,8 +44,7 @@ async def start_pg_listener(app):
                     pass
             conn = None
             await asyncio.sleep(2)
-    
-    # cleanup on shutdown
+
     if conn is not None:
         try:
             await conn.close()
@@ -74,25 +52,19 @@ async def start_pg_listener(app):
             pass
 
 
-def _on_task_status_change(conn, pid, channel, message):
-    """Callback for Postgres NOTIFY events.
-    
-    message is a JSON string: {"task_id":"...", "status":"...", "operation":"..."}
-    """
-    global _redis_for_listener
+def _on_task_status_change(conn, pid, channel, payload):
+    if _redis_for_listener is None:
+        return
     try:
-        if _redis_for_listener is not None:
-            # schedule async publish
-            asyncio.create_task(_publish_to_redis_async(message))
+        asyncio.create_task(_publish_to_redis(payload))
     except Exception:
         pass
 
 
-async def _publish_to_redis_async(message: str):
-    """Publish received notification to Redis."""
-    global _redis_for_listener
+async def _publish_to_redis(payload: str):
+    if _redis_for_listener is None:
+        return
     try:
-        if _redis_for_listener is not None:
-            await _redis_for_listener.publish("tasks.status", message)
+        await _redis_for_listener.publish("tasks.status", payload)
     except Exception:
         pass
