@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI
+from pydantic import HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 # Patch external services before importing app
@@ -102,7 +103,7 @@ def mock_token_response() -> AccessTokenResponse:
 def task_create_body() -> TaskCreate:
     """Fixture for a valid task creation payload."""
     return TaskCreate(
-        url="https://example.com",
+        url=HttpUrl("https://example.com"),
         method="GET",
         headers={"Accept": "application/json"},
         body="body payload",
@@ -114,7 +115,7 @@ def task_create_body() -> TaskCreate:
 def task_update_body() -> TaskUpdate:
     """Fixture for a valid task update payload."""
     return TaskUpdate(
-        url="https://example.com/updated",
+        url=HttpUrl("https://example.com/updated"),
         method="POST",
         headers={"Accept": "application/json"},
         body="updated payload",
@@ -126,7 +127,7 @@ def mock_task_response() -> TaskResponse:
     """Fixture for a mocked task response."""
     return TaskResponse(
         id=uuid4(),
-        url="https://example.com",
+        url=HttpUrl("https://example.com"),
         method="GET",
         headers={"Accept": "application/json"},
         body="body payload",
