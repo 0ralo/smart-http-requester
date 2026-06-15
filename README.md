@@ -19,7 +19,6 @@
 - **Asynchronous architectures** – FastAPI + RabbitMQ for non‑blocking request handling
 - **Reliable task processing** – Dead Letter Queue, exponential retry strategy, graceful shutdown
 - **Instant session revocation** – Opaque tokens stored in Redis (no JWT blind spots)
-- **Real‑time updates** – WebSocket status push notifications
 - **Full observability** – Prometheus metrics + Grafana dashboards
 - **Secure authentication** – Password hashing with bcrypt, session-based auth
 
@@ -31,26 +30,12 @@
 ┌─────────────┐
 │   Client    │
 └──────┬──────┘
-       │ HTTP/WebSocket
+       │ HTTP
        ▼
 ┌──────────────────────────────────────┐
 │     FastAPI Gateway (Port 8000)      │
 │  - Auth (Redis sessions)             │
 │  - Metrics collection                │
-│  - WebSocket push                    │
-## Architecture
-
-```
-┌─────────────┐
-│   Client    │
-└──────┬──────┘
-       │ HTTP/WebSocket
-       ▼
-┌──────────────────────────────────────┐
-│     FastAPI Gateway (Port 8000)      │
-│  - Auth (Redis sessions)             │
-│  - Metrics collection                │
-│  - WebSocket push                    │
 └─────────┬──────────────────────┬─────┘
           │                      │
     PostgreSQL DB          RabbitMQ Queue
@@ -71,8 +56,8 @@
 **Data flow:**
 1. User registers/logs in → session token stored in Redis
 2. User creates HTTP request task → saved to PostgreSQL + published to RabbitMQ
-3. Task status updates published to Redis pub/sub → WebSocket clients notified
-4. Client can poll `GET /requests/{id}` or listen on WebSocket `/ws`
+3. Task status updates are saved in PostgreSQL and available via API queries
+4. Client can poll `GET /requests/{id}` for status updates
 5. On failure: exponential backoff retry (5s, 10s, 20s, 40s) → Dead Letter Queue
 6. All operations tracked in Prometheus metrics
 
@@ -83,7 +68,7 @@
 | Component            | Technology                | Version    | Purpose                                    |
 |----------------------|---------------------------|------------|------------------------------------------------|
 | **Runtime**          | Python                    | 3.14+      | Application runtime                        |
-| **API Framework**     | FastAPI + Granian/Uvicorn | 0.136.0+   | REST API, WebSocket, auth middleware       |
+| **API Framework**     | FastAPI + Granian/Uvicorn | 0.136.0+   | REST API, auth middleware                  |
 | **Message Queue**     | RabbitMQ                  | 3.12+      | Task buffering, DLX (Dead Letter Exchange) |
 | **Primary DB**        | PostgreSQL                | 17         | Tasks, users, audit logs                   |
 | **Session Store**     | Redis                     | 7          | Opaque session tokens, pub/sub              |
@@ -116,12 +101,6 @@
 | `PUT` | `/v1/requests/{task_id}` | Update task (only pending tasks) | ✅ |
 | `DELETE` | `/v1/requests/{task_id}` | Cancel task (only pending tasks) | ✅ |
 
-### Real‑time Updates
-
-| Protocol | Endpoint | Purpose | Auth |
-|----------|----------|---------|------|
-| `WebSocket` | `/ws` | Subscribe to task status changes (Redis pub/sub) | ✅ Bearer token or query param |
-
 ### Monitoring
 
 | Method | Endpoint | Purpose | Auth |
@@ -137,7 +116,7 @@
 | ✅ Async HTTP execution  | Done   | FastAPI + RabbitMQ – non‑blocking request handling               |
 | ✅ Reliable task queuing | Done   | Dead Letter Queue, exponential retry (5s → 40s), graceful shutdown|
 | ✅ Instant auth revocation | Done | Opaque session tokens in Redis (no JWT blind spots)              |
-| ✅ Real‑time updates     | Done   | WebSocket (`/ws`) + Redis pub/sub for status changes             |
+| ✅ Metrics & monitoring  | Done   | Prometheus export at `/v1/metrics`, Grafana dashboards            |
 | ✅ Metrics & monitoring  | Done   | Prometheus export at `/v1/metrics`, Grafana dashboards           |
 | ✅ Secure authentication | Done   | bcrypt password hashing, session-based (no plaintext tokens)     |
 | ✅ User management       | Done   | Register, login, logout, token refresh, profile endpoints        |
@@ -384,7 +363,7 @@ curl http://localhost:8000/api/openapi.json > schema.json
 ### Latency
 - **Task creation**: < 50ms
 - **Task retrieval**: < 10ms
-- **Status notification**: < 100ms (WebSocket push)
+- **Status notification**: < 100ms (API query)  
 
 ### Resource Usage
 - **Memory**: ~150MB (minimal, stateless)

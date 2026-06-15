@@ -19,8 +19,6 @@ from domain.tasks import (
 from repository import AuthRepository
 from schemas import TaskCreate, TaskResponse, User, TaskUpdate
 from services.database import get_db, async_session
-from services.redis import get_redis
-import json
 
 
 async def _get_token_from_websocket(websocket: WebSocket) -> str | None:
@@ -187,59 +185,3 @@ async def request_create_batch(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
 
     return tasks
-
-
-@requests_router.websocket("/{task_id}/ws")
-async def request_websocket(task_id: UUID, websocket: WebSocket):
-    """Websocket endpoint for real time status updates of a single task."""
-    await websocket.accept()
-
-    user = await _authenticate_websocket(websocket)
-    if user is None:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
-
-    try:
-        async with async_session() as session:
-            await get_request_task(task_id, user.id, session)
-    except TaskNotFoundError:
-        await websocket.close(code=status.WS_1011_INTERNAL_ERROR)
-        return
-    except AccessDeniedError:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
-
-    redis = await get_redis()
-    pubsub = redis.pubsub()
-    await pubsub.subscribe("tasks.status")
-
-    try:
-        async for message in pubsub.listen():
-            if message is None:
-                continue
-            if message.get("type") != "message":
-                continue
-            data = message.get("data")
-            if isinstance(data, (bytes, bytearray)):
-                try:
-                    payload = json.loads(data.decode())
-                except Exception:
-                    continue
-            else:
-                try:
-                    payload = json.loads(str(data))
-                except Exception:
-                    continue
-
-            if payload.get("task_id") != str(task_id):
-                continue
-
-            await websocket.send_text(json.dumps(payload))
-    except WebSocketDisconnect:
-        pass
-    finally:
-        try:
-            await pubsub.unsubscribe("tasks.status")
-            await pubsub.close()
-        except Exception:
-            pass
