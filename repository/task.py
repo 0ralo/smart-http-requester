@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import UUID as UUIDType, JSONB
 
 from schemas import TaskCreate, TaskResponse
+import json
+from services.redis import get_redis
 
 
 class TaskRepository:
@@ -144,6 +146,17 @@ class TaskRepository:
         raw_task = query.fetchone()
         task = TaskResponse.model_validate(raw_task)
         
+        # publish status change if it happened
+        try:
+            new_status = task.status
+            if current_status != new_status:
+                payload = json.dumps({"task_id": str(task.id), "status": new_status})
+                redis = await get_redis()
+                await redis.publish("tasks.status", payload)
+        except Exception:
+            # don't fail DB operations if publishing failed
+            pass
+
         return task, user_id, current_status
 
     async def update_task(
@@ -197,4 +210,14 @@ class TaskRepository:
         raw_task = query.fetchone()
         task = TaskResponse.model_validate(raw_task)
         
+        # If status changed (unlikely here), publish update
+        try:
+            new_status = task.status
+            if current_status != new_status:
+                payload = json.dumps({"task_id": str(task.id), "status": new_status})
+                redis = await get_redis()
+                await redis.publish("tasks.status", payload)
+        except Exception:
+            pass
+
         return task, user_id, current_status

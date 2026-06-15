@@ -1,7 +1,7 @@
 import hashlib
 import uuid
 
-import psycopg
+import asyncpg
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,11 +32,9 @@ async def create_user(
     try:
         return await repo.create_new_user(data.username, hashed)
     except sqlalchemy.exc.IntegrityError as e:
-        match type(e.orig):
-            case psycopg.errors.UniqueViolation:
-                raise UserAlreadyExists
-            case _:
-                raise UnknownException
+        if isinstance(e.orig, asyncpg.exceptions.UniqueViolation):
+            raise UserAlreadyExists
+        raise UnknownException
 
 
 async def get_token(

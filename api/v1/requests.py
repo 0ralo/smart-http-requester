@@ -1,10 +1,10 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Depends, Query, status
+from fastapi import APIRouter, HTTPException, Depends, Query, status, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from middleware.auth import authorization
+from middleware.auth import authorization, is_str_uuid
 from domain.tasks import (
     create_request_task,
     create_request_tasks_batch,
@@ -16,8 +16,27 @@ from domain.tasks import (
     AccessDeniedError,
     InvalidTaskStatusError,
 )
+from repository import AuthRepository
 from schemas import TaskCreate, TaskResponse, User, TaskUpdate
-from services.database import get_db
+from services.database import get_db, async_session
+
+
+async def _get_token_from_websocket(websocket: WebSocket) -> str | None:
+    auth_header = websocket.headers.get("authorization")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        return auth_header.split(" ", 1)[1].strip()
+    return websocket.query_params.get("token")
+
+
+async def _authenticate_websocket(websocket: WebSocket) -> User | None:
+    token = await _get_token_from_websocket(websocket)
+    if token is None or not is_str_uuid(token):
+        return None
+
+    async with async_session() as session:
+        repo = AuthRepository(session)
+        user = await repo.get_user_by_token(token)
+    return User.model_validate(user) if user is not None else None
 
 requests_router = APIRouter(prefix="/requests", tags=["requests"])
 
@@ -166,8 +185,3 @@ async def request_create_batch(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
 
     return tasks
-
-
-@requests_router.post("/{task_id}/ws", summary="Get websocket real time status of task")
-async def request_websocket():
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED)

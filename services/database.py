@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from config import settings
 
 postgres_url = URL.create(
-    drivername="postgresql+psycopg",
+    drivername="postgresql+asyncpg",
     username=settings.postgres_user,
     password=settings.postgres_password,
     host=settings.postgres_host,
