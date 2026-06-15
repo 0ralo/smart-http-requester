@@ -2,13 +2,6 @@ FROM python:3.14-alpine
 
 WORKDIR /app
 
-# Install system requirements
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    postgresql-client \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
 # Copy requirements list
 COPY pyproject.toml .
 

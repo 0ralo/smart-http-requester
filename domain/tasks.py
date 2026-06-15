@@ -46,7 +46,7 @@ async def create_request_task(
     # Create task in database
     task = await repo.create_task(
         user_id=user_id,
-        url=task_data.url,
+        url=str(task_data.url),
         method=task_data.method,
         headers=task_data.headers,
         body=task_data.body,

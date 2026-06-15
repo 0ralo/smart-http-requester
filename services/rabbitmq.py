@@ -1,6 +1,7 @@
 from typing import Union
 
 import aio_pika
+from loguru import logger
 
 from config import settings
 
@@ -30,8 +31,7 @@ async def close_rabbitmq() -> None:
     _rabbitmq = None
 
 
-async def ensure_structure(max_attempts: int = DEFAULT_MAX_ATTEMPTS) -> None:
-    max_attempts = min(max_attempts, MAX_ATTEMPTS_LIMIT)
+async def ensure_structure() -> None:
     conn = await get_rabbitmq()
     channel = await conn.channel()
     await channel.set_qos(prefetch_count=10)
@@ -54,9 +54,12 @@ async def ensure_structure(max_attempts: int = DEFAULT_MAX_ATTEMPTS) -> None:
 
 async def publish_task(payload: Union[bytes, str], attempts: int = 0) -> None:
     conn = await get_rabbitmq()
-    channel = await conn.channel()
-    main_ex = await channel.declare_exchange(TASK_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
-    body = payload if isinstance(payload, bytes) else str(payload).encode()
-    message = aio_pika.Message(body=body, headers={"attempts": attempts})
-    await main_ex.publish(message, routing_key=TASK_QUEUE)
-    await channel.close()
+    try:
+        async with conn.channel() as channel:
+            main_ex = await channel.declare_exchange(TASK_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
+            body = payload if isinstance(payload, bytes) else str(payload).encode()
+            message = aio_pika.Message(body=body, headers={"x-attempts": attempts, "x-attempts-done": 0})
+            await main_ex.publish(message, routing_key=TASK_QUEUE)
+    except Exception as e:
+        logger.error(e)
+        raise e
