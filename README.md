@@ -22,9 +22,7 @@
 - **Full observability** – Prometheus metrics + Grafana dashboards
 - **Secure authentication** – Password hashing with bcrypt, session-based auth
 
----
 
-## Architecture
 
 ```
 ┌─────────────┐
@@ -83,29 +81,29 @@
 
 ### Authentication Endpoints
 
-| Method | Endpoint | Purpose | Auth |
-|--------|----------|---------|------|
-| `POST` | `/v1/auth/register` | Register new user (username + password hash) | ❌ |
-| `POST` | `/v1/auth/login` | Authenticate user, return opaque session token | ❌ |
-| `POST` | `/v1/auth/logout` | Invalidate current session token | ✅ |
-| `POST` | `/v1/auth/refresh` | Refresh session token (extends 7 days) | ✅ |
-| `GET` | `/v1/auth/me` | Get current user profile | ✅ |
+| Method | Endpoint            | Purpose                                        | Auth |
+|--------|---------------------|------------------------------------------------|------|
+| `POST` | `/v1/auth/register` | Register new user (username + password hash)   | ❌    |
+| `POST` | `/v1/auth/login`    | Authenticate user, return opaque session token | ❌    |
+| `POST` | `/v1/auth/logout`   | Invalidate current session token               | ✅    |
+| `POST` | `/v1/auth/refresh`  | Refresh session token (extends 7 days)         | ✅    |
+| `GET`  | `/v1/auth/me`       | Get current user profile                       | ✅    |
 
 ### HTTP Request Management
 
-| Method | Endpoint | Purpose | Auth |
-|--------|----------|---------|------|
-| `POST` | `/v1/requests/` | Create new HTTP request task | ✅ |
-| `GET` | `/v1/requests/` | List user's tasks (paginated, skip/limit) | ✅ |
-| `GET` | `/v1/requests/{task_id}` | Get task details by ID | ✅ |
-| `PUT` | `/v1/requests/{task_id}` | Update task (only pending tasks) | ✅ |
-| `DELETE` | `/v1/requests/{task_id}` | Cancel task (only pending tasks) | ✅ |
+| Method   | Endpoint                 | Purpose                                   | Auth |
+|----------|--------------------------|-------------------------------------------|------|
+| `POST`   | `/v1/requests/`          | Create new HTTP request task              | ✅    |
+| `GET`    | `/v1/requests/`          | List user's tasks (paginated, skip/limit) | ✅    |
+| `GET`    | `/v1/requests/{task_id}` | Get task details by ID                    | ✅    |
+| `PUT`    | `/v1/requests/{task_id}` | Update task (only pending tasks)          | ✅    |
+| `DELETE` | `/v1/requests/{task_id}` | Cancel task (only pending tasks)          | ✅    |
 
 ### Monitoring
 
-| Method | Endpoint | Purpose | Auth |
-|--------|----------|---------|------|
-| `GET` | `/v1/metrics` | Export metrics in Prometheus format | ❌ |
+| Method | Endpoint      | Purpose                             | Auth |
+|--------|---------------|-------------------------------------|------|
+| `GET`  | `/v1/metrics` | Export metrics in Prometheus format | ❌    |
 
 ---
 
