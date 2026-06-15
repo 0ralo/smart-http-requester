@@ -29,7 +29,7 @@ class TaskUpdate(BaseModel):
 class TaskResponse(BaseModelFromAttributes):
     id: UUID
     url: HttpUrl
-    method: str
+    method: Literal["GET", "POST", "PUT", "DELETE", "PATCH"]
     headers: Optional[dict[str, str]]
     body: Optional[str]
     status: str

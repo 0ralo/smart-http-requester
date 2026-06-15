@@ -211,7 +211,7 @@ async def update_request_task(
     repo = TaskRepository(session)
     result = await repo.update_task(
         task_id=task_id,
-        url=task_data.url,
+        url=str(task_data.url),
         method=task_data.method,
         headers=task_data.headers,
         body=task_data.body,
