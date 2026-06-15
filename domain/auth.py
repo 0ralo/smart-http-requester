@@ -32,7 +32,7 @@ async def create_user(
     try:
         return await repo.create_new_user(data.username, hashed)
     except sqlalchemy.exc.IntegrityError as e:
-        if isinstance(e.orig, asyncpg.exceptions.UniqueViolation):
+        if isinstance(e.orig, asyncpg.exceptions.UniqueViolationError):
             raise UserAlreadyExists
         raise UnknownException
 
