@@ -18,7 +18,7 @@
 
 - **Asynchronous architectures** – FastAPI + RabbitMQ for non‑blocking request handling
 - **Reliable task processing** – Dead Letter Queue, exponential retry strategy, graceful shutdown
-- **Instant session revocation** – Opaque tokens stored in Redis (no JWT blind spots)
+- **Instant session revocation** – Opaque tokens (no JWT blind spots)
 - **Full observability** – Prometheus metrics + Grafana dashboards
 - **Secure authentication** – Password hashing with bcrypt, session-based auth
 
@@ -32,7 +32,7 @@
        ▼
 ┌──────────────────────────────────────┐
 │     FastAPI Gateway (Port 8000)      │
-│  - Auth (Redis sessions)             │
+│  - Auth                              │
 │  - Metrics collection                │
 └─────────┬──────────────────────┬─────┘
           │                      │
@@ -52,7 +52,7 @@
 ```
 
 **Data flow:**
-1. User registers/logs in → session token stored in Redis
+1. User registers/logs in → session token
 2. User creates HTTP request task → saved to PostgreSQL + published to RabbitMQ
 3. Task status updates are saved in PostgreSQL and available via API queries
 4. Client can poll `GET /requests/{id}` for status updates
@@ -69,7 +69,7 @@
 | **API Framework**     | FastAPI + Granian/Uvicorn | 0.136.0+   | REST API, auth middleware                  |
 | **Message Queue**     | RabbitMQ                  | 3.12+      | Task buffering, DLX (Dead Letter Exchange) |
 | **Primary DB**        | PostgreSQL                | 17         | Tasks, users, audit logs                   |
-| **Session Store**     | Redis                     | 7          | Opaque session tokens, pub/sub              |
+| **Session Store**     | PostgreSQL                | 7          | Opaque session tokens, pub/sub              |
 | **Encryption**        | bcrypt                    | 5.0.0+     | Password hashing                           |
 | **Metrics**           | Prometheus                | latest     | Time-series metrics collection             |
 | **Visualization**     | Grafana                   | latest     | Dashboards, alerts, real-time insights     |
@@ -109,18 +109,17 @@
 
 ## Key Features
 
-| Feature                  | Status | Implementation                                                   |
-|--------------------------|--------|------------------------------------------------------------------|
-| ✅ Async HTTP execution  | Done   | FastAPI + RabbitMQ – non‑blocking request handling               |
-| ✅ Reliable task queuing | Done   | Dead Letter Queue, exponential retry (5s → 40s), graceful shutdown|
-| ✅ Instant auth revocation | Done | Opaque session tokens in Redis (no JWT blind spots)              |
-| ✅ Metrics & monitoring  | Done   | Prometheus export at `/v1/metrics`, Grafana dashboards            |
-| ✅ Metrics & monitoring  | Done   | Prometheus export at `/v1/metrics`, Grafana dashboards           |
-| ✅ Secure authentication | Done   | bcrypt password hashing, session-based (no plaintext tokens)     |
-| ✅ User management       | Done   | Register, login, logout, token refresh, profile endpoints        |
-| ✅ Task CRUD operations  | Done   | Create, read, update, cancel HTTP request tasks                  |
-| ⏳ Worker implementation | WIP    | External worker service for task execution (planned: Go/Python)  |
-| ⏳ Rate limiting         | WIP    | Sliding window algorithm (infrastructure ready in Redis)         |
+| Feature                   | Status | Implementation                                                     |
+|---------------------------|--------|--------------------------------------------------------------------|
+| ✅ Async HTTP execution    | Done   | FastAPI + RabbitMQ – non‑blocking request handling                 |
+| ✅ Reliable task queuing   | Done   | Dead Letter Queue, exponential retry (5s → 40s), graceful shutdown |
+| ✅ Instant auth revocation | Done   | Opaque session tokens  (no JWT blind spots)                |
+| ✅ Metrics & monitoring    | Done   | Prometheus export at `/v1/metrics`, Grafana dashboards             |
+| ✅ Secure authentication   | Done   | bcrypt password hashing                                            |
+| ✅ User management         | Done   | Register, login, logout, token refresh, profile endpoints          |
+| ✅ Task CRUD operations    | Done   | Create, read, update, cancel HTTP request tasks                    |
+| ⏳ Worker implementation   | WIP    | External worker service for task execution (planned: Go/Rust)      |
+| ✅ Rate limiting           | Done   | Sliding window algorithm (infrastructure ready in Redis)           |
 
 ---
 
@@ -243,12 +242,11 @@ For detailed metrics documentation, see [PROMETHEUS_METRICS.md](PROMETHEUS_METRI
 
 ### Why Opaque Tokens Instead of JWT?
 
-This project uses **Redis‑backed opaque sessions** for authentication because:
+This project uses **opaque sessions** for authentication because:
 
 ✅ **Instant revocation** – Logout takes effect immediately (no 5-15 minute delay)  
 ✅ **Single token format** – No refresh token complexity  
-✅ **Infrastructure reuse** – Redis already in the stack for caching  
-✅ **Simple validation** – Direct Redis lookup vs JWT signature verification
+✅ **Infrastructure reuse** – Redis already in the stack for caching
 
 **JWT Trade‑offs:**
 - Requires long expiry for good UX (exposes revocation window)
@@ -257,10 +255,10 @@ This project uses **Redis‑backed opaque sessions** for authentication because:
 
 ### Token Lifecycle
 
-1. **Register**: `POST /v1/auth/register` → UUID token → stored in Redis
+1. **Register**: `POST /v1/auth/register` → UUID token
 2. **Login**: `POST /v1/auth/login` → existing or new session token
 3. **Refresh**: `POST /v1/auth/refresh` → extends expiry by 7 days
-4. **Logout**: `POST /v1/auth/logout` → token immediately deleted from Redis
+4. **Logout**: `POST /v1/auth/logout` → token immediately deleted
 5. **Revocation**: Admins can invalidate tokens instantly (no delay)
 
 ---
