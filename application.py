@@ -41,11 +41,17 @@ async def pre_shutdown():
     await close_redis()
 
 
+def get_description():
+    with open("description.md", "r", encoding="utf-8") as f:
+        content = f.read()
+    return content
+
 app = FastAPI(
     title="HTTP-requester API documentation",
     lifespan=lifespan,
     openapi_url="/api/openapi.json",
     debug=settings.debug,
+    description=get_description()
 )
 
 app.add_middleware(RateLimitMiddleware)
