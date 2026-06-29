@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from loguru import logger
 from api.v1 import router as router_v1
 from config import settings
-from middlewares import RateLimitMiddleware
+from middleware.rate_limit import RateLimitMiddleware
 
 from services.database import database_ping
 from services.redis import close_redis, get_redis

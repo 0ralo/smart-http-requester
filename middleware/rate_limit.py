@@ -18,7 +18,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if allowed:
             response = await call_next(request)
         else:
-            return JSONResponse(status_code=status.HTTP_429_TOO_MANY_REQUESTS, content={"detail": "Too many requests"})
+            response = JSONResponse(status_code=status.HTTP_429_TOO_MANY_REQUESTS, content={"detail": "Too many requests"})
         response.headers["X-RateLimit-Limit"] = str(settings.rate_limit)
         response.headers["X-RateLimit-Remaining"] = str(settings.rate_limit - total)
         response.headers["X-RateLimit-Reset"] = datetime.datetime.strftime(
