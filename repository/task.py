@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import UUID as UUIDType, JSONB
 
 from schemas import TaskCreate, TaskResponse
 import json
-from services.redis import get_redis
+from services.redis_service import get_redis
 
 
 class TaskRepository:

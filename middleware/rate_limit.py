@@ -4,7 +4,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette import status
 from starlette.middleware.base import BaseHTTPMiddleware
-from services.redis import check_rate_limit
+from services.redis_service import check_rate_limit
 from config import settings
 
 

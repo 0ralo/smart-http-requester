@@ -1,6 +1,7 @@
 from typing import Union
 
 import aio_pika
+from aio_pika import ExchangeType
 from loguru import logger
 
 from config import settings
@@ -31,23 +32,61 @@ async def close_rabbitmq() -> None:
     _rabbitmq = None
 
 
-async def ensure_structure() -> None:
+RETRY_QUEUES = {
+    1: {"name": "tasks.retry.1s", "ttl": 1000},      # 1 secs
+    2: {"name": "tasks.retry.2s", "ttl": 2000},      # 2 secs
+    3: {"name": "tasks.retry.4s", "ttl": 4000},      # 4 secs
+    4: {"name": "tasks.retry.8s", "ttl": 8000},      # 8 secs
+    5: {"name": "tasks.retry.16s", "ttl": 16000},    # 16 secs
+    6: {"name": "tasks.retry.32s", "ttl": 32000},    # 32 secs
+    7: {"name": "tasks.retry.64s", "ttl": 64000},    # 64 secs
+}
+
+async def setup_rabbitmq_with_retries():
     conn = await get_rabbitmq()
     channel = await conn.channel()
     await channel.set_qos(prefetch_count=10)
 
-    main_ex = await channel.declare_exchange(TASK_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
-    dlx_ex = await channel.declare_exchange(DLX_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
+    main_ex = await channel.declare_exchange(
+        TASK_EXCHANGE,
+        ExchangeType.DIRECT,
+        durable=True
+    )
+    dlx_ex = await channel.declare_exchange(
+        DLX_EXCHANGE,
+        ExchangeType.DIRECT,
+        durable=True
+    )
 
-    dlq = await channel.declare_queue(DLQ_QUEUE, durable=True)
-    await dlq.bind(dlx_ex, routing_key=DLQ_QUEUE)
-
-    arguments = {
+    # Основная очередь
+    main_queue_args = {
         "x-dead-letter-exchange": DLX_EXCHANGE,
-        "x-dead-letter-routing-key": DLQ_QUEUE,
+        "x-dead-letter-routing-key": "retry.1s",
     }
-    task_q = await channel.declare_queue(TASK_QUEUE, durable=True, arguments=arguments)
-    await task_q.bind(main_ex, routing_key=TASK_QUEUE)
+    task_queue = await channel.declare_queue(
+        TASK_QUEUE,
+        durable=True,
+        arguments=main_queue_args
+    )
+    await task_queue.bind(main_ex, routing_key=TASK_QUEUE)
+
+    await task_queue.bind(dlx_ex, routing_key=TASK_QUEUE)
+
+    retry_queues = {}
+    for attempt, config in RETRY_QUEUES.items():
+        queue_args = {
+            "x-message-ttl": config["ttl"],
+            "x-dead-letter-exchange": DLX_EXCHANGE,
+            "x-dead-letter-routing-key": TASK_QUEUE,
+        }
+
+        queue = await channel.declare_queue(
+            config["name"],
+            durable=True,
+            arguments=queue_args
+        )
+        await queue.bind(dlx_ex, routing_key=config["name"])
+        retry_queues[attempt] = queue
 
     await channel.close()
 

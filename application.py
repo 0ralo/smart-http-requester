@@ -7,8 +7,8 @@ from config import settings
 from middleware.rate_limit import RateLimitMiddleware
 
 from services.database import database_ping
-from services.redis import close_redis, get_redis
-from services.rabbitmq import close_rabbitmq, get_rabbitmq, ensure_structure
+from services.redis_service import close_redis, get_redis
+from services.rabbitmq import close_rabbitmq, get_rabbitmq, setup_rabbitmq_with_retries
 from middleware.metrics import MetricsMiddleware
 
 
@@ -31,7 +31,7 @@ async def pre_check():
     logger.debug("Database connection is established")
     await get_rabbitmq()
     logger.debug("RabbitMQ connection is established")
-    await ensure_structure()
+    await setup_rabbitmq_with_retries()
     logger.debug("RabbitMQ structure is established")
 
 

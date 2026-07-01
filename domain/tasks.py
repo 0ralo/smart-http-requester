@@ -52,6 +52,7 @@ async def create_request_task(
         body=task_data.body,
         max_attempts=task_data.max_attempts,
     )
+    await session.commit()
     
     # Publish task to RabbitMQ queue
     payload = json.dumps({"task_id": str(task.id)})
