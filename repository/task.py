@@ -227,7 +227,7 @@ class TaskRepository:
 
     async def confirm_rmq_task(self, id: uuid.UUID):
         await self.session.execute(text("""
-            update tasks set status = 'pending' where id=:id
+            update tasks set status = 'pending' where id=:id and status = 'BEFORE RMQ'
         """).bindparams(
             BindParameter("id", id, UUIDType),
         ))
