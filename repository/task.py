@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional
 from uuid import UUID
 
@@ -22,11 +23,12 @@ class TaskRepository:
         headers: Optional[dict],
         body: Optional[str],
         max_attempts: int,
+        status: str = 'pending'
     ) -> TaskResponse:
         """Create a new task in the database"""
         query = await self.session.execute(text("""
             INSERT INTO tasks (user_id, url, method, headers, body, max_attempts, status, attempt_count)
-            VALUES (:user_id, :url, :method, :headers, :body, :max_attempts, 'pending', 0)
+            VALUES (:user_id, :url, :method, :headers, :body, :max_attempts, :status, 0)
             RETURNING id, user_id, url, method, headers, body, status, attempt_count, max_attempts, result, created_at, updated_at
         """).bindparams(
             BindParameter("user_id", user_id, Integer),
@@ -35,6 +37,7 @@ class TaskRepository:
             BindParameter("headers", headers, JSONB),
             BindParameter("body", body, TEXT),
             BindParameter("max_attempts", max_attempts, Integer),
+            BindParameter("status", status, TEXT),
         ))
         raw_task = query.fetchone()
         return TaskResponse.model_validate(raw_task)
@@ -221,3 +224,11 @@ class TaskRepository:
             pass
 
         return task, user_id, current_status
+
+    async def confirm_rmq_task(self, id: uuid.UUID):
+        await self.session.execute(text("""
+            update tasks set status = 'pending' where id=:id
+        """).bindparams(
+            BindParameter("id", id, UUIDType),
+        ))
+

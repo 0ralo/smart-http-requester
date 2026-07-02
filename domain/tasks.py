@@ -51,12 +51,15 @@ async def create_request_task(
         headers=task_data.headers,
         body=task_data.body,
         max_attempts=task_data.max_attempts,
+        status="BEFORE RMQ"
     )
     await session.commit()
     
     # Publish task to RabbitMQ queue
     payload = json.dumps({"task_id": str(task.id)})
     await publish_task(payload, attempts=task.max_attempts)
+
+    await repo.confirm_rmq_task(task.id)
     
     tasks_created_total.inc()
     return task

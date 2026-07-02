@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     rabbitmq_password: str = "guest"
     rabbitmq_vhost: str = ""
 
+    use_argon: bool = False
+
     model_config = SettingsConfigDict(
         env_prefix="",
         env_file=".env",

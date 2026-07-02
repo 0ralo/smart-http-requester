@@ -33,6 +33,7 @@ async def pre_check():
     logger.debug("RabbitMQ connection is established")
     await setup_rabbitmq_with_retries()
     logger.debug("RabbitMQ structure is established")
+    logger.debug(f"{'argon' if settings.use_argon else 'bcrypt'} will be used as hash algorithm")
 
 
 async def pre_shutdown():
