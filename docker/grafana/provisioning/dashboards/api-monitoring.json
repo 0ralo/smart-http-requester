@@ -556,7 +556,7 @@
                       "version": "v0",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum(auth_attempts_total{status=\"success\"})",
+                        "expr": "sum(auth_attempts_total{status=\"success\",type=\"register\"})",
                         "legendFormat": "__auto",
                         "range": true
                       }
