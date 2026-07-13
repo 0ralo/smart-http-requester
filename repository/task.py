@@ -2,6 +2,7 @@ import uuid
 from typing import Optional
 from uuid import UUID
 
+from loguru import logger
 from sqlalchemy import text, BindParameter, TEXT, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import UUID as UUIDType, JSONB
@@ -220,8 +221,8 @@ class TaskRepository:
                 payload = json.dumps({"task_id": str(task.id), "status": new_status})
                 redis = await get_redis()
                 await redis.publish("tasks.status", payload)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Error while processing task: {e}")
 
         return task, user_id, current_status
 

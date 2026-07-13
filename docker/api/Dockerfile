@@ -3,13 +3,13 @@ FROM python:3.14-alpine
 WORKDIR /app
 
 # Copy requirements list
-COPY pyproject.toml .
+COPY ../../pyproject.toml .
 
 # Install requirements
 RUN pip install --no-cache-dir -e .
 
 # Copy app
-COPY . .
+COPY ../.. .
 
 # Create logs directory
 RUN mkdir -p logs
