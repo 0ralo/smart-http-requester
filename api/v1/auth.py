@@ -64,7 +64,7 @@ async def auth_login(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     except UserDoesNotExists:
         auth_attempts_total.labels(type="login", status="not_found").inc()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     return token
 
 

@@ -19,3 +19,12 @@ async def metrics() -> Response:
         content=generate_latest(),
         media_type=CONTENT_TYPE_LATEST
     )
+
+
+@metrics_router.get("/fake_status", summary="test-endpoint", include_in_schema=False)
+async def fake_status(
+    status_code: int = 200,
+) -> Response:
+    return Response(
+        status_code=status_code,
+    )

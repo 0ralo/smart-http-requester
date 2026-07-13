@@ -181,7 +181,7 @@ The API will be available at `http://localhost:8000`
 ### Full Stack (API + All Services)
 
 ```bash
-docker-compose -f docker-compose.full.yml up -d
+docker-compose -f docker-compose.yml up -d
 ```
 
 This starts:
@@ -192,21 +192,13 @@ This starts:
 - **Prometheus**: http://localhost:9090
 - **Grafana**: http://localhost:3000 (admin/admin)
 
-### Just Monitoring Stack
-
-```bash
-docker-compose -f docker-compose-metrics.yml up -d
-# Then run your API locally:
-python -m uvicorn application:app
-```
-
 ---
 
 ## Monitoring
 
 ### Prometheus & Grafana
 
-When running the full stack (`docker-compose.full.yml`):
+When running the full stack (`docker-compose.yml`):
 
 - **Prometheus UI**: http://localhost:9090
   - View metrics: http://localhost:9090/graph
