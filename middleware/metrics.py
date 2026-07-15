@@ -5,6 +5,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 import time
 
+from services.logger import logger
 from services.metrics import (
     http_requests_total,
     http_request_duration_seconds,
@@ -44,6 +45,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
         # Record start time
         start_time = time.time()
 
+        logger.debug("HTTP request started: method=%s endpoint=%s", method, endpoint)
         try:
             # Process request
             response = await call_next(request)
@@ -74,6 +76,13 @@ class MetricsMiddleware(BaseHTTPMiddleware):
                 except ValueError:
                     pass
 
+            logger.debug(
+                "HTTP request completed: method=%s endpoint=%s status=%s duration=%.4fs",
+                method,
+                endpoint,
+                response.status_code,
+                duration,
+            )
             return response
 
         finally:

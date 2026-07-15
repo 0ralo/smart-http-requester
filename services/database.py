@@ -5,6 +5,7 @@ from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from config import settings
+from services.logger import logger
 
 postgres_url = URL.create(
     drivername="postgresql+psycopg",
@@ -29,20 +30,31 @@ async_session = async_sessionmaker(
 
 
 async def database_ping() -> bool:
-    async with async_session() as session:
-        query = await session.execute(text(
-            """select 1"""
-        ))
-        return query.scalar_one() == 1
+    logger.debug("Pinging database")
+    try:
+        async with async_session() as session:
+            query = await session.execute(text(
+                """select 1"""
+            ))
+            result = query.scalar_one() == 1
+            logger.debug("Database ping successful")
+            return result
+    except Exception:
+        logger.exception("Database ping failed")
+        raise
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    logger.debug("Opening database session")
     async with async_session() as session:
         try:
             yield session
             await session.commit()
+            logger.debug("Database session committed")
         except Exception:
             await session.rollback()
+            logger.exception("Database session rollback due to error")
             raise
         finally:
             await session.close()
+            logger.debug("Database session closed")

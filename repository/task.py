@@ -6,6 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import UUID as UUIDType, JSONB
 
 from schemas import TaskCreate, TaskResponse
+import json
+from services.logger import logger
+from services.redis import get_redis
 
 
 class TaskRepository:
@@ -35,6 +38,7 @@ class TaskRepository:
             BindParameter("max_attempts", max_attempts, Integer),
         ))
         raw_task = query.fetchone()
+        logger.debug("Repository: task created for user_id=%s task_id=%s", user_id, raw_task.id)
         return TaskResponse.model_validate(raw_task)
 
     async def get_task_by_id(self, task_id: UUID) -> Optional[tuple[TaskResponse, int]]:
@@ -48,6 +52,7 @@ class TaskRepository:
         ))
         raw_task = query.fetchone()
         if raw_task is None:
+            logger.debug("Repository: task not found task_id=%s", task_id)
             return None
         # Return both the TaskResponse and user_id for ownership check
         user_id = raw_task.user_id
@@ -78,6 +83,7 @@ class TaskRepository:
                 BindParameter(f"max_attempts_{idx}", task.max_attempts, Integer),
             ])
 
+        logger.debug("Repository: creating batch of %s tasks for user_id=%s", len(tasks_data), user_id)
         query = await self.session.execute(text(f"""
             INSERT INTO tasks (user_id, url, method, headers, body, max_attempts, status, attempt_count)
             VALUES {', '.join(values)}

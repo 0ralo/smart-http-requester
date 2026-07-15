@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from repository import TaskRepository
 from schemas import TaskCreate, TaskResponse, TaskUpdate
+from services.logger import logger
 from services.rabbitmq import publish_task
 from services.metrics import tasks_created_total, tasks_completed_total
 
@@ -42,6 +43,7 @@ async def create_request_task(
         Created TaskResponse object
     """
     repo = TaskRepository(session)
+    logger.info("Creating request task for user_id=%s url=%s", user_id, task_data.url)
     
     # Create task in database
     task = await repo.create_task(
@@ -56,6 +58,7 @@ async def create_request_task(
     # Publish task to RabbitMQ queue
     payload = json.dumps({"task_id": str(task.id)})
     await publish_task(payload, attempts=task.max_attempts)
+    logger.info("Request task published: task_id=%s user_id=%s", task.id, user_id)
     
     tasks_created_total.inc()
     return task
@@ -73,6 +76,7 @@ async def create_request_tasks_batch(
         raise ValueError("At least one task must be provided.")
 
     repo = TaskRepository(session)
+    logger.info("Creating batch of %s request tasks for user_id=%s", len(tasks_data), user_id)
     tasks = await repo.create_tasks_batch(
         user_id=user_id,
         tasks_data=tasks_data,
@@ -82,6 +86,7 @@ async def create_request_tasks_batch(
         payload = json.dumps({"task_id": str(task.id)})
         await publish_task(payload, attempts=task.max_attempts)
 
+    logger.info("Batch request tasks published for user_id=%s count=%s", user_id, len(tasks))
     tasks_created_total.inc(len(tasks))
     return tasks
 
@@ -107,6 +112,7 @@ async def get_request_task(
         AccessDeniedError: User does not own the task
     """
     repo = TaskRepository(session)
+    logger.debug("Fetching request task: task_id=%s user_id=%s", task_id, user_id)
     result = await repo.get_task_by_id(task_id)
     
     if result is None:
@@ -139,6 +145,7 @@ async def get_user_request_tasks(
         List of TaskResponse objects sorted by update time (descending)
     """
     repo = TaskRepository(session)
+    logger.debug("Fetching tasks for user_id=%s skip=%s limit=%s", user_id, skip, limit)
     tasks = await repo.get_user_tasks(user_id, skip=skip, limit=limit)
     return tasks
 
@@ -165,6 +172,7 @@ async def cancel_request_task(
         InvalidTaskStatusError: Task is not in 'pending' status
     """
     repo = TaskRepository(session)
+    logger.info("Canceling request task: task_id=%s user_id=%s", task_id, user_id)
     result = await repo.cancel_task(task_id)
     
     if result is None:
@@ -181,6 +189,7 @@ async def cancel_request_task(
             f"Only pending tasks can be canceled."
         )
 
+    logger.info("Task canceled successfully: task_id=%s", task_id)
     tasks_completed_total.labels(status="canceled").inc()
     return task
 
@@ -209,6 +218,7 @@ async def update_request_task(
         InvalidTaskStatusError: Task is not in 'pending' status
     """
     repo = TaskRepository(session)
+    logger.info("Updating request task: task_id=%s user_id=%s", task_id, user_id)
     result = await repo.update_task(
         task_id=task_id,
         url=task_data.url,

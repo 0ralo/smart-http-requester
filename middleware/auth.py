@@ -9,6 +9,7 @@ from starlette import status
 from repository import AuthRepository
 from schemas import User
 from services.database import get_db
+from services.logger import logger
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/auth/token")
 
@@ -25,13 +26,17 @@ def authorization(privileges=0):
         session: AsyncSession = Depends(get_db),
     ) -> User:
         if not is_str_uuid(token):
+            logger.warning("Authentication rejected: invalid token format")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
         repo = AuthRepository(session)
         user = await repo.get_user_by_token(token)
         if user is None:
+            logger.warning("Authentication rejected: token not found or expired")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
         if user.privileges < privileges:
+            logger.warning("Authorization denied: user_id=%s privileges=%s required=%s", user.id, user.privileges, privileges)
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+        logger.debug("Authentication succeeded for user_id=%s", user.id)
         return User.model_validate(user)
     return wrapper

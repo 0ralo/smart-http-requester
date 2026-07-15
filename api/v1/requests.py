@@ -17,7 +17,6 @@ from domain.tasks import (
     InvalidTaskStatusError,
 )
 from schemas import TaskCreate, TaskResponse, User, TaskUpdate
-from services.database import get_db
 
 requests_router = APIRouter(prefix="/requests", tags=["requests"])
 
@@ -37,9 +36,12 @@ async def request_create(
     - **body**: Optional request body
     - **max_attempts**: Maximum number of retry attempts (1-20) - default: 5
     """
+    logger.info("Task creation requested by user_id=%s for url=%s", user.id, task_data.url)
     try:
         task = await create_request_task(user.id, task_data, session)
+        logger.info("Task created successfully: task_id=%s user_id=%s", task.id, user.id)
     except Exception as exc:
+        logger.exception("Task creation failed for user_id=%s", user.id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
 
     return task
@@ -58,11 +60,15 @@ async def request_info(
     Returns 403 Forbidden if the task belongs to another user.
     Returns 404 Not Found if the task does not exist.
     """
+    logger.info("Task lookup requested: task_id=%s user_id=%s", task_id, user.id)
     try:
         task = await get_request_task(task_id, user.id, session)
+        logger.debug("Task lookup succeeded: task_id=%s user_id=%s", task_id, user.id)
     except TaskNotFoundError:
+        logger.warning("Task lookup failed: task_id=%s not found", task_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     except AccessDeniedError:
+        logger.warning("Task lookup denied: task_id=%s user_id=%s", task_id, user.id)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     return task
@@ -83,7 +89,9 @@ async def request_user_tasks(
     - **skip**: Number of tasks to skip (for pagination) - default: 0
     - **limit**: Number of tasks to return (1-100) - default: 20
     """
+    logger.info("Listing tasks for user_id=%s skip=%s limit=%s", user.id, skip, limit)
     tasks = await get_user_request_tasks(user.id, skip=skip, limit=limit, session=session)
+    logger.debug("Listed %s tasks for user_id=%s", len(tasks), user.id)
     return tasks
 
 
@@ -104,13 +112,18 @@ async def request_delete(
     Returns 404 Not Found if the task does not exist.
     Returns 400 Bad Request if the task is not in pending status.
     """
+    logger.info("Task cancellation requested: task_id=%s user_id=%s", task_id, user.id)
     try:
         task = await cancel_request_task(task_id, user.id, session)
+        logger.info("Task canceled successfully: task_id=%s user_id=%s", task_id, user.id)
     except TaskNotFoundError:
+        logger.warning("Task cancellation failed: task_id=%s not found", task_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     except AccessDeniedError:
+        logger.warning("Task cancellation denied: task_id=%s user_id=%s", task_id, user.id)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     except InvalidTaskStatusError as exc:
+        logger.warning("Task cancellation rejected: task_id=%s user_id=%s reason=%s", task_id, user.id, exc)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
     return task
@@ -135,13 +148,18 @@ async def request_update(
     Returns 404 Not Found if the task does not exist.
     Returns 400 Bad Request if the task is not in pending status.
     """
+    logger.info("Task update requested: task_id=%s user_id=%s", task_id, user.id)
     try:
         task = await update_request_task(task_id, user.id, task_data, session)
+        logger.info("Task updated successfully: task_id=%s user_id=%s", task_id, user.id)
     except TaskNotFoundError:
+        logger.warning("Task update failed: task_id=%s not found", task_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     except AccessDeniedError:
+        logger.warning("Task update denied: task_id=%s user_id=%s", task_id, user.id)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     except InvalidTaskStatusError as exc:
+        logger.warning("Task update rejected: task_id=%s user_id=%s reason=%s", task_id, user.id, exc)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
     return task
@@ -158,11 +176,15 @@ async def request_create_batch(
 
     Accepts a JSON array of task objects and returns the created tasks.
     """
+    logger.info("Batch task creation requested by user_id=%s count=%s", user.id, len(tasks_data))
     try:
         tasks = await create_request_tasks_batch(user.id, tasks_data, session)
+        logger.info("Batch task creation succeeded for user_id=%s count=%s", user.id, len(tasks))
     except ValueError as exc:
+        logger.warning("Batch task creation rejected for user_id=%s: %s", user.id, exc)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
+        logger.exception("Batch task creation failed for user_id=%s", user.id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
 
     return tasks
