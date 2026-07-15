@@ -2,11 +2,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from api.v1 import router as router_v1
+from config import settings
+from middleware.rate_limit import RateLimitMiddleware
 
 from services.database import database_ping
 from services.logger import logger
-from services.redis import close_redis, get_redis
-from services.rabbitmq import close_rabbitmq, get_rabbitmq
+from services.redis_service import close_redis, get_redis
+from services.rabbitmq import close_rabbitmq, get_rabbitmq, setup_rabbitmq_with_retries
 from middleware.metrics import MetricsMiddleware
 
 
@@ -29,6 +31,9 @@ async def pre_check():
         logger.debug("Database connection is established")
         await get_rabbitmq()
         logger.debug("RabbitMQ connection is established")
+        await setup_rabbitmq_with_retries()
+        logger.debug("RabbitMQ structure is established")
+        logger.debug("%s will be used as hash algorithm", "argon" if settings.use_argon else "bcrypt")
     except Exception:
         logger.exception("Startup pre-check failed")
         raise
@@ -43,13 +48,20 @@ async def pre_shutdown():
         logger.exception("Shutdown cleanup failed")
 
 
+def get_description():
+    with open("description.md", "r", encoding="utf-8") as f:
+        content = f.read()
+    return content
+
 app = FastAPI(
     title="HTTP-requester API documentation",
     lifespan=lifespan,
-    openapi_url="/api/openapi.json"
+    openapi_url="/api/openapi.json",
+    debug=settings.debug,
+    description=get_description()
 )
 
-# Add metrics middleware to collect HTTP metrics
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(MetricsMiddleware)
 
 app.include_router(router_v1)

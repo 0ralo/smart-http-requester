@@ -8,7 +8,7 @@ from config import settings
 from services.logger import logger
 
 postgres_url = URL.create(
-    drivername="postgresql+psycopg",
+    drivername="postgresql+asyncpg",
     username=settings.postgres_user,
     password=settings.postgres_password,
     host=settings.postgres_host,

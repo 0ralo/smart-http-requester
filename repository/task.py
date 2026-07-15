@@ -1,14 +1,15 @@
+import uuid
 from typing import Optional
 from uuid import UUID
 
+from loguru import logger
 from sqlalchemy import text, BindParameter, TEXT, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import UUID as UUIDType, JSONB
 
 from schemas import TaskCreate, TaskResponse
 import json
-from services.logger import logger
-from services.redis import get_redis
+from services.redis_service import get_redis
 
 
 class TaskRepository:
@@ -23,11 +24,12 @@ class TaskRepository:
         headers: Optional[dict],
         body: Optional[str],
         max_attempts: int,
+        status: str = 'pending'
     ) -> TaskResponse:
         """Create a new task in the database"""
         query = await self.session.execute(text("""
             INSERT INTO tasks (user_id, url, method, headers, body, max_attempts, status, attempt_count)
-            VALUES (:user_id, :url, :method, :headers, :body, :max_attempts, 'pending', 0)
+            VALUES (:user_id, :url, :method, :headers, :body, :max_attempts, :status, 0)
             RETURNING id, user_id, url, method, headers, body, status, attempt_count, max_attempts, result, created_at, updated_at
         """).bindparams(
             BindParameter("user_id", user_id, Integer),
@@ -36,6 +38,7 @@ class TaskRepository:
             BindParameter("headers", headers, JSONB),
             BindParameter("body", body, TEXT),
             BindParameter("max_attempts", max_attempts, Integer),
+            BindParameter("status", status, TEXT),
         ))
         raw_task = query.fetchone()
         logger.debug("Repository: task created for user_id=%s task_id=%s", user_id, raw_task.id)
@@ -150,6 +153,17 @@ class TaskRepository:
         raw_task = query.fetchone()
         task = TaskResponse.model_validate(raw_task)
         
+        # publish status change if it happened
+        try:
+            new_status = task.status
+            if current_status != new_status:
+                payload = json.dumps({"task_id": str(task.id), "status": new_status})
+                redis = await get_redis()
+                await redis.publish("tasks.status", payload)
+        except Exception:
+            # don't fail DB operations if publishing failed
+            pass
+
         return task, user_id, current_status
 
     async def update_task(
@@ -203,4 +217,23 @@ class TaskRepository:
         raw_task = query.fetchone()
         task = TaskResponse.model_validate(raw_task)
         
+        # If status changed (unlikely here), publish update
+        try:
+            new_status = task.status
+            if current_status != new_status:
+                payload = json.dumps({"task_id": str(task.id), "status": new_status})
+                redis = await get_redis()
+                await redis.publish("tasks.status", payload)
+        except Exception as e:
+            logger.error(f"Error while processing task: {e}")
+
         return task, user_id, current_status
+
+    async def confirm_rmq_task(self, id: uuid.UUID):
+        await self.session.execute(text("""
+            update tasks set status = 'pending' where id=:id and status = 'BEFORE RMQ'
+        """).bindparams(
+            BindParameter("id", id, UUIDType),
+        ))
+        await self.session.commit()
+

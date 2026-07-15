@@ -139,16 +139,6 @@ async def auth_verify(
     return info
 
 
-@auth_router.post("/auth/oauth/{provider}", summary="OAuth access token")
-async def auth_me():
-    """
-    OAuth authentication endpoint (not implemented yet).
-    
-    Will support third-party authentication providers (Google, GitHub, etc.) in the future.
-    """
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED,)
-
-
 @auth_router.post("/token", include_in_schema=False)
 async def token(
     form_data: OAuth2PasswordRequestForm = Depends(),

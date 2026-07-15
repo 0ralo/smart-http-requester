@@ -2,6 +2,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    rate_limit: int = 100
+
     debug: bool = False
 
     redis_host: str = "127.0.0.1"
@@ -18,6 +20,8 @@ class Settings(BaseSettings):
     rabbitmq_user: str = "guest"
     rabbitmq_password: str = "guest"
     rabbitmq_vhost: str = ""
+
+    use_argon: bool = False
 
     model_config = SettingsConfigDict(
         env_prefix="",

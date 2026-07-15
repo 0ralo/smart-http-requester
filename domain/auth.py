@@ -1,7 +1,7 @@
 import hashlib
 import uuid
 
-import psycopg
+import asyncpg
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,7 +36,14 @@ async def create_user(
         logger.info("User created successfully: username=%s user_id=%s", data.username, user.user_id)
         return user
     except sqlalchemy.exc.IntegrityError as e:
-        if isinstance(e.orig, asyncpg.exceptions.UniqueViolation):
+        unique_violation_types = tuple(
+            cls for cls in (
+                getattr(asyncpg.exceptions, "UniqueViolation", None),
+                getattr(asyncpg.exceptions, "UniqueViolationError", None),
+            )
+            if cls is not None
+        )
+        if unique_violation_types and isinstance(e.orig, unique_violation_types):
             logger.warning("User creation failed: username already exists (%s)", data.username)
             raise UserAlreadyExists
         logger.exception("Unexpected database error while creating user %s", data.username)

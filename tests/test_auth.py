@@ -870,14 +870,3 @@ class TestAuthMe:
                 )
 
             assert response.status_code == 404
-
-
-@pytest.mark.asyncio
-class TestAuthOAuth:
-    """Tests for the not-implemented OAuth endpoint."""
-
-    async def test_oauth_not_implemented(self, app):
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.post("/v1/auth/auth/oauth/google")
-
-        assert response.status_code == 501

@@ -48,18 +48,23 @@ async def create_request_task(
     # Create task in database
     task = await repo.create_task(
         user_id=user_id,
-        url=task_data.url,
+        url=str(task_data.url),
         method=task_data.method,
         headers=task_data.headers,
         body=task_data.body,
         max_attempts=task_data.max_attempts,
+        status="BEFORE RMQ",
     )
-    
+    await session.commit()
+
     # Publish task to RabbitMQ queue
     payload = json.dumps({"task_id": str(task.id)})
     await publish_task(payload, attempts=task.max_attempts)
     logger.info("Request task published: task_id=%s user_id=%s", task.id, user_id)
-    
+
+    await repo.confirm_rmq_task(task.id)
+    await session.commit()
+
     tasks_created_total.inc()
     return task
 
@@ -221,7 +226,7 @@ async def update_request_task(
     logger.info("Updating request task: task_id=%s user_id=%s", task_id, user_id)
     result = await repo.update_task(
         task_id=task_id,
-        url=task_data.url,
+        url=str(task_data.url),
         method=task_data.method,
         headers=task_data.headers,
         body=task_data.body,

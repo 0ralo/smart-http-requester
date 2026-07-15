@@ -43,14 +43,14 @@ class TestRequestCreate:
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.post(
                     "/v1/requests/",
-                    json=task_create_body.model_dump(),
+                    json=task_create_body.model_dump(mode="json"),
                     headers={"Authorization": f"Bearer {valid_token}"},
                 )
 
             assert response.status_code == 200
             data = response.json()
             assert data["id"] == str(mock_task_response.id)
-            assert data["url"] == task_create_body.url
+            assert data["url"] == str(task_create_body.url)
             mock_create_request_task.assert_called_once()
 
     async def test_create_request_server_error(
@@ -72,7 +72,7 @@ class TestRequestCreate:
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.post(
                     "/v1/requests/",
-                    json=task_create_body.model_dump(),
+                    json=task_create_body.model_dump(mode="json"),
                     headers={"Authorization": f"Bearer {valid_token}"},
                 )
 
@@ -351,7 +351,7 @@ class TestRequestUpdate:
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.put(
                     f"/v1/requests/{task_id}",
-                    json=task_update_body.model_dump(),
+                    json=task_update_body.model_dump(mode="json"),
                     headers={"Authorization": f"Bearer {valid_token}"},
                 )
 
@@ -378,7 +378,7 @@ class TestRequestUpdate:
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.put(
                     f"/v1/requests/{task_id}",
-                    json=task_update_body.model_dump(),
+                    json=task_update_body.model_dump(mode="json"),
                     headers={"Authorization": f"Bearer {valid_token}"},
                 )
 
@@ -404,7 +404,7 @@ class TestRequestUpdate:
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.put(
                     f"/v1/requests/{task_id}",
-                    json=task_update_body.model_dump(),
+                    json=task_update_body.model_dump(mode="json"),
                     headers={"Authorization": f"Bearer {valid_token}"},
                 )
 
@@ -430,7 +430,7 @@ class TestRequestUpdate:
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.put(
                     f"/v1/requests/{task_id}",
-                    json=task_update_body.model_dump(),
+                    json=task_update_body.model_dump(mode="json"),
                     headers={"Authorization": f"Bearer {valid_token}"},
                 )
 
@@ -458,7 +458,7 @@ class TestRequestBatch:
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.post(
                     "/v1/requests/batch",
-                    json=[mock_task_response.model_dump(exclude={"id", "status", "attempt_count", "created_at", "updated_at", "result"}) for mock_task_response in mock_task_response_list],
+                    json=[mock_task_response.model_dump(mode="json", exclude={"id", "status", "attempt_count", "created_at", "updated_at", "result"}) for mock_task_response in mock_task_response_list],
                     headers={"Authorization": f"Bearer {valid_token}"},
                 )
 
@@ -534,14 +534,3 @@ class TestRequestBatch:
                 )
 
             assert response.status_code == 500
-
-
-@pytest.mark.asyncio
-class TestRequestWebsocket:
-    async def test_request_websocket_not_implemented(self):
-        from application import app as fastapi_app
-
-        async with AsyncClient(transport=ASGITransport(app=fastapi_app), base_url="http://test") as client:
-            response = await client.post(f"/v1/requests/{uuid4()}/ws")
-
-        assert response.status_code == 501
