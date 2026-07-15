@@ -77,7 +77,6 @@ services:
       RABBITMQ_VHOST: ""
       DEBUG: false
       USE_ARGON: true
-
     volumes:
       - ./logs:/app/logs
       - .:/app
