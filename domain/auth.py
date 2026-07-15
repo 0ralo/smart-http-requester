@@ -1,7 +1,11 @@
 import hashlib
 import uuid
 
-import asyncpg
+try:
+    import asyncpg
+except ImportError:  # pragma: no cover - optional dependency in test environments
+    asyncpg = None
+
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,8 +42,8 @@ async def create_user(
     except sqlalchemy.exc.IntegrityError as e:
         unique_violation_types = tuple(
             cls for cls in (
-                getattr(asyncpg.exceptions, "UniqueViolation", None),
-                getattr(asyncpg.exceptions, "UniqueViolationError", None),
+                getattr(asyncpg.exceptions, "UniqueViolation", None) if asyncpg is not None else None,
+                getattr(asyncpg.exceptions, "UniqueViolationError", None) if asyncpg is not None else None,
             )
             if cls is not None
         )
