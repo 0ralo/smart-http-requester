@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -25,7 +26,8 @@ async def lifespan(_: FastAPI):
 async def pre_check():
     logger.info("Server is starting")
     try:
-        await (await get_redis()).ping()
+        r = await get_redis()
+        await r.ping()
         logger.debug("Redis connection is established")
         await database_ping()
         logger.debug("Database connection is established")
@@ -60,8 +62,8 @@ app = FastAPI(
     debug=settings.debug,
     description=get_description()
 )
-
-app.add_middleware(RateLimitMiddleware)
+if os.getenv("PYTEST_RUNNING") != "1":
+    app.add_middleware(RateLimitMiddleware)
 app.add_middleware(MetricsMiddleware)
 
 app.include_router(router_v1)

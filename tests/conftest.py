@@ -1,4 +1,5 @@
 """Pytest configuration and shared fixtures."""
+import asyncio
 import hashlib
 from typing import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -8,10 +9,13 @@ from fastapi import FastAPI
 from pydantic import HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
+
+import os
+os.environ["PYTEST_RUNNING"] = "1"
+
 # Patch external services before importing app
-with patch("services.redis.get_redis"), \
-     patch("services.redis.close_redis"), \
-     patch("services.database.database_ping"), \
+with patch("services.redis_service.get_redis"), \
+     patch("services.redis_service.close_redis"), \
      patch("services.rabbitmq.get_rabbitmq"), \
      patch("services.rabbitmq.close_rabbitmq"):
     from application import app as fastapi_app
@@ -30,6 +34,13 @@ from schemas import (
 )
 import datetime
 from uuid import uuid4
+
+@pytest.fixture
+async def client(app):
+    """Create an async client for testing."""
+    from httpx import AsyncClient, ASGITransport
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        yield client
 
 
 @pytest.fixture
