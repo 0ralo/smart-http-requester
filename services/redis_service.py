@@ -40,7 +40,7 @@ async def get_script():
 
 async def init_script():
     lua_script = """
-            -- KEYS[1] = key ~ "rate_limit:user:123"
+            -- KEYS[1] = key ~ "rate_limit:user:004-redis-distributed-rate-limiting.en.md"
             -- ARGV[1] = limit
             -- ARGV[2] = window time (60 secs)
             -- ARGV[3] = time now

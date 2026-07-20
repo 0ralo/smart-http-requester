@@ -230,20 +230,6 @@ For detailed metrics documentation, see [PROMETHEUS_METRICS.md](PROMETHEUS_METRI
 
 ---
 
-## Authentication Strategy
-
-### Why Opaque Tokens Instead of JWT?
-
-This project uses **opaque sessions** for authentication because:
-
-✅ **Instant revocation** – Logout takes effect immediately (no 5-15 minute delay)  
-✅ **Single token format** – No refresh token complexity  
-✅ **Infrastructure reuse** – Redis already in the stack for caching
-
-**JWT Trade‑offs:**
-- Requires long expiry for good UX (exposes revocation window)
-- Hybrid approach (JWT + Redis blacklist) adds complexity
-- No real benefit for this use case where auth service is always available
 
 ### Token Lifecycle
 
@@ -313,6 +299,11 @@ smart-http-requester/
 ├── config.py                   # Environment configuration
 └── README.md                   # This file
 ```
+
+
+## Architecture Decision Records
+All significant architectural decisions are documented in the [docs/adr/](./docs/adr/) folder. 
+Decisions are available in English and German.
 
 ---
 
