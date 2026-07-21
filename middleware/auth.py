@@ -13,12 +13,14 @@ from services.logger import logger
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/auth/token")
 
+
 def is_str_uuid(value: str) -> bool:
     try:
         UUID(value)
         return True
     except ValueError:
         return False
+
 
 def authorization(privileges=0):
     async def wrapper(
@@ -35,8 +37,14 @@ def authorization(privileges=0):
             logger.warning("Authentication rejected: token not found or expired")
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
         if user.privileges < privileges:
-            logger.warning("Authorization denied: user_id=%s privileges=%s required=%s", user.id, user.privileges, privileges)
+            logger.warning(
+                "Authorization denied: user_id=%s privileges=%s required=%s",
+                user.id,
+                user.privileges,
+                privileges,
+            )
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
         logger.debug("Authentication succeeded for user_id=%s", user.id)
         return User.model_validate(user)
+
     return wrapper

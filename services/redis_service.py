@@ -23,6 +23,7 @@ async def get_redis() -> redis.Redis:
         )
     return _redis_client
 
+
 async def close_redis() -> None:
     global _redis_client
     if _redis_client is not None:
@@ -30,13 +31,16 @@ async def close_redis() -> None:
         await _redis_client.close()
         _redis_client = None
 
+
 script: Optional[AsyncScript] = None
+
 
 async def get_script():
     global script
     if script is None:
         script = await init_script()
     return script
+
 
 async def init_script():
     lua_script = """
@@ -78,9 +82,10 @@ async def init_script():
     return (await get_redis()).register_script(lua_script)
 
 
-async def check_rate_limit(key: str, limit: int = 100, window: int = 60) -> tuple[bool, float, int]:
+async def check_rate_limit(
+    key: str, limit: int = 100, window: int = 60
+) -> tuple[bool, float, int]:
     script = await get_script()
     now = int(time.time())
     result = await script(keys=[key], args=[limit, window, now])
     return result[0], result[1], result[2]
-

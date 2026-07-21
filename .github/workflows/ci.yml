@@ -1,0 +1,175 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+  workflow_dispatch:
+
+jobs:
+  # ===================== JOB 1: Lint =====================
+  lint:
+    name: 🔍 Lint (Ruff)
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          check-latest: true
+          python-version: '3.14'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+      
+      - name: Run Ruff linter
+        run: ruff check . --output-format=github
+      
+      - name: Run Ruff formatter check
+        run: ruff format --check .
+
+  # ===================== JOB 2: Security =====================
+  security:
+    name: 🔒 Security (Bandit)
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          check-latest: true
+          python-version: '3.14'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit
+      
+      - name: Run Bandit security scan
+        run: |
+          bandit -r . -c pyproject.toml -ll -f json -o bandit-report.json
+          
+          HIGH_COUNT=$(jq '.results | map(select(.issue_severity == "HIGH")) | length' bandit-report.json)
+          MEDIUM_COUNT=$(jq '.results | map(select(.issue_severity == "MEDIUM")) | length' bandit-report.json)
+          LOW_COUNT=$(jq '.results | map(select(.issue_severity == "LOW")) | length' bandit-report.json)
+          
+          echo "📊 Results: HIGH=$HIGH_COUNT, MEDIUM=$MEDIUM_COUNT, LOW=$LOW_COUNT"
+          
+          if [ "$HIGH_COUNT" -gt 0 ]; then
+            echo "❌ Found HIGH severity issues:"
+            jq '.results[] | select(.issue_severity == "HIGH") | {file: .filename, line: .line_number, issue: .issue_text}' bandit-report.json
+            exit 1
+          fi
+          
+          if [ "$MEDIUM_COUNT" -gt 0 ]; then
+            echo "⚠️ Found MEDIUM severity issues:"
+            jq '.results[] | select(.issue_severity == "MEDIUM") | {file: .filename, line: .line_number, issue: .issue_text}' bandit-report.json
+            #exit 1
+          fi
+          
+          echo "✅ No HIGH severity issues found"
+          exit 0
+        continue-on-error: false
+      
+      - name: Upload Bandit report (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+          retention-days: 7
+
+  # ===================== JOB 3: Tests =====================
+  test:
+    name: 🧪 Tests (pytest + Coverage)
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          check-latest: true
+          python-version: '3.14'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv sync --dev
+      
+      - name: Wait for services
+        run: |
+          sleep 5
+      
+      - name: Run tests with coverage
+        run: |
+          uv run pytest tests/ -v \
+            --cov=. \
+            --cov-report=xml \
+            --cov-report=term \
+            --cov-fail-under=70
+      
+      - name: Upload coverage to Codecov
+        if: success()
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+      
+      - name: Upload test report (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            .pytest_cache/
+            coverage.xml
+          retention-days: 7
+
+  # ===================== JOB 4: Status Check =====================
+  check-status:
+    name: ✅ All checks passed
+    runs-on: self-hosted
+    needs: [lint, security, test]
+    if: always()
+    
+    steps:
+      - name: Check results
+        run: |
+          echo "📋 Checking all job results..."
+          echo "🔍 Lint: ${{ needs.lint.result }}"
+          echo "🔒 Security: ${{ needs.security.result }}"
+          echo "🧪 Tests: ${{ needs.test.result }}"
+          
+          if [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.security.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ]; then
+            echo "❌ Some checks failed!"
+            exit 1
+          fi
+          
+          echo "✅ All checks passed successfully!"
+          echo "✨ Ready for deployment!"

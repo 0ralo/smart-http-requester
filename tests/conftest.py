@@ -1,4 +1,5 @@
 """Pytest configuration and shared fixtures."""
+
 import hashlib
 from typing import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -10,16 +11,24 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 
 
 import os
+
 os.environ["PYTEST_RUNNING"] = "1"
 
 # Patch external services before importing app
-with patch("services.redis_service.get_redis"), \
-     patch("services.redis_service.close_redis"), \
-     patch("services.rabbitmq.get_rabbitmq"), \
-     patch("services.rabbitmq.close_rabbitmq"):
+with (
+    patch("services.redis_service.get_redis"),
+    patch("services.redis_service.close_redis"),
+    patch("services.rabbitmq.get_rabbitmq"),
+    patch("services.rabbitmq.close_rabbitmq"),
+):
     from application import app as fastapi_app
 
-from domain.auth import UserAlreadyExists, UnknownException, PasswordIsIncorrect, UserDoesNotExists
+from domain.auth import (
+    UserAlreadyExists,
+    UnknownException,
+    PasswordIsIncorrect,
+    UserDoesNotExists,
+)
 from schemas import (
     UserRegisterBody,
     UserLoginBody,
@@ -39,7 +48,10 @@ from uuid import uuid4
 async def client(app):
     """Create an async client for testing."""
     from httpx import AsyncClient, ASGITransport
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
         yield client
 
 
@@ -105,8 +117,7 @@ def mock_user_response() -> UserRegisterResponse:
 def mock_token_response() -> AccessTokenResponse:
     """Fixture for a mocked token response."""
     return AccessTokenResponse(
-        access_token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test",
-        token_type="Bearer"
+        access_token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test", token_type="Bearer"
     )
 
 
@@ -160,48 +171,60 @@ def mock_task_response_list(mock_task_response: TaskResponse) -> list[TaskRespon
 @pytest.fixture
 def mock_create_user_success(mock_user_response: UserRegisterResponse):
     """Mock create_user that succeeds."""
+
     async def mock_impl(*args, **kwargs):
         return mock_user_response
+
     return AsyncMock(side_effect=mock_impl)
 
 
 @pytest.fixture
 def mock_create_user_already_exists():
     """Mock create_user that raises UserAlreadyExists."""
+
     async def mock_impl(*args, **kwargs):
         raise UserAlreadyExists
+
     return AsyncMock(side_effect=mock_impl)
 
 
 @pytest.fixture
 def mock_create_user_error():
     """Mock create_user that raises UnknownException."""
+
     async def mock_impl(*args, **kwargs):
         raise UnknownException
+
     return AsyncMock(side_effect=mock_impl)
 
 
 @pytest.fixture
 def mock_get_token_success(mock_token_response: AccessTokenResponse):
     """Mock get_token that succeeds."""
+
     async def mock_impl(*args, **kwargs):
         return mock_token_response
+
     return AsyncMock(side_effect=mock_impl)
 
 
 @pytest.fixture
 def mock_get_token_wrong_password():
     """Mock get_token that raises PasswordIsIncorrect."""
+
     async def mock_impl(*args, **kwargs):
         raise PasswordIsIncorrect
+
     return AsyncMock(side_effect=mock_impl)
 
 
 @pytest.fixture
 def mock_get_token_user_not_found():
     """Mock get_token that raises UserDoesNotExists."""
+
     async def mock_impl(*args, **kwargs):
         raise UserDoesNotExists
+
     return AsyncMock(side_effect=mock_impl)
 
 
@@ -229,11 +252,7 @@ def valid_token() -> str:
 @pytest.fixture
 def mock_user(valid_username: str) -> User:
     """Fixture for a mocked user object."""
-    return User(
-        id=1,
-        username=valid_username,
-        privileges=0
-    )
+    return User(id=1, username=valid_username, privileges=0)
 
 
 @pytest.fixture
@@ -241,77 +260,95 @@ def mock_user_me(valid_username: str) -> UserMe:
     """Fixture for a mocked UserMe response."""
     return UserMe(
         username=valid_username,
-        valid_until=datetime.datetime.now() + datetime.timedelta(days=7)
+        valid_until=datetime.datetime.now() + datetime.timedelta(days=7),
     )
 
 
 @pytest.fixture
 def mock_delete_token_success():
     """Mock delete_token that succeeds."""
+
     async def mock_impl(*args, **kwargs):
         return None
+
     return AsyncMock(side_effect=mock_impl)
 
 
 @pytest.fixture
 def mock_delete_token_user_not_found():
     """Mock delete_token that raises UserDoesNotExists."""
+
     async def mock_impl(*args, **kwargs):
         raise UserDoesNotExists
+
     return AsyncMock(side_effect=mock_impl)
 
 
 @pytest.fixture
 def mock_refresh_token_success(mock_token_response: AccessTokenResponse):
     """Mock refresh_token that succeeds."""
+
     async def mock_impl(*args, **kwargs):
         return mock_token_response
+
     return AsyncMock(side_effect=mock_impl)
 
 
 @pytest.fixture
 def mock_refresh_token_user_not_found():
     """Mock refresh_token that raises UserDoesNotExists."""
+
     async def mock_impl(*args, **kwargs):
         raise UserDoesNotExists
+
     return AsyncMock(side_effect=mock_impl)
 
 
 @pytest.fixture
 def mock_get_user_info_success(mock_user_me: UserMe):
     """Mock get_user_info that succeeds."""
+
     async def mock_impl(*args, **kwargs):
         return mock_user_me
+
     return AsyncMock(side_effect=mock_impl)
 
 
 @pytest.fixture
 def mock_get_user_info_user_not_found():
     """Mock get_user_info that raises UserDoesNotExists."""
+
     async def mock_impl(*args, **kwargs):
         raise UserDoesNotExists
+
     return AsyncMock(side_effect=mock_impl)
 
 
 @pytest.fixture
 def mock_get_token_for_docs_success(mock_token_response: AccessTokenResponse):
     """Mock get_token_for_docs that succeeds."""
+
     async def mock_impl(*args, **kwargs):
         return mock_token_response
+
     return AsyncMock(side_effect=mock_impl)
 
 
 @pytest.fixture
 def mock_get_token_for_docs_wrong_password():
     """Mock get_token_for_docs that raises PasswordIsIncorrect."""
+
     async def mock_impl(*args, **kwargs):
         raise PasswordIsIncorrect
+
     return AsyncMock(side_effect=mock_impl)
 
 
 @pytest.fixture
 def mock_get_token_for_docs_user_not_found():
     """Mock get_token_for_docs that raises UserDoesNotExists."""
+
     async def mock_impl(*args, **kwargs):
         raise UserDoesNotExists
+
     return AsyncMock(side_effect=mock_impl)

@@ -1,4 +1,5 @@
 """Tests for /requests endpoints."""
+
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -23,11 +24,14 @@ class TestRequestCreate:
         task_create_body: TaskCreate,
         mock_task_response: TaskResponse,
     ):
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.create_request_task") as mock_create_request_task:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.create_request_task") as mock_create_request_task,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -52,11 +56,14 @@ class TestRequestCreate:
         mock_user: User,
         task_create_body: TaskCreate,
     ):
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.create_request_task") as mock_create_request_task:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.create_request_task") as mock_create_request_task,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -76,10 +83,13 @@ class TestRequestCreate:
         valid_token: str,
         mock_user: User,
     ):
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -103,11 +113,14 @@ class TestRequestInfo:
         mock_task_response: TaskResponse,
     ):
         task_id = uuid4()
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.get_request_task") as mock_get_request_task:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.get_request_task") as mock_get_request_task,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -128,11 +141,14 @@ class TestRequestInfo:
         mock_user: User,
     ):
         task_id = uuid4()
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.get_request_task") as mock_get_request_task:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.get_request_task") as mock_get_request_task,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -152,11 +168,14 @@ class TestRequestInfo:
         mock_user: User,
     ):
         task_id = uuid4()
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.get_request_task") as mock_get_request_task:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.get_request_task") as mock_get_request_task,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -179,11 +198,14 @@ class TestRequestUserTasks:
         mock_user: User,
         mock_task_response_list: list[TaskResponse],
     ):
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.get_user_request_tasks") as mock_get_user_tasks:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.get_user_request_tasks") as mock_get_user_tasks,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -203,10 +225,13 @@ class TestRequestUserTasks:
         valid_token: str,
         mock_user: User,
     ):
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -229,11 +254,14 @@ class TestRequestDelete:
         mock_task_response: TaskResponse,
     ):
         task_id = uuid4()
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.cancel_request_task") as mock_cancel_task:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.cancel_request_task") as mock_cancel_task,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -254,11 +282,14 @@ class TestRequestDelete:
         mock_user: User,
     ):
         task_id = uuid4()
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.cancel_request_task") as mock_cancel_task:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.cancel_request_task") as mock_cancel_task,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -278,11 +309,14 @@ class TestRequestDelete:
         mock_user: User,
     ):
         task_id = uuid4()
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.cancel_request_task") as mock_cancel_task:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.cancel_request_task") as mock_cancel_task,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -302,11 +336,14 @@ class TestRequestDelete:
         mock_user: User,
     ):
         task_id = uuid4()
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.cancel_request_task") as mock_cancel_task:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.cancel_request_task") as mock_cancel_task,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -331,11 +368,14 @@ class TestRequestUpdate:
         mock_task_response: TaskResponse,
     ):
         task_id = uuid4()
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.update_request_task") as mock_update_request_task:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.update_request_task") as mock_update_request_task,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -358,11 +398,14 @@ class TestRequestUpdate:
         task_update_body: TaskUpdate,
     ):
         task_id = uuid4()
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.update_request_task") as mock_update_request_task:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.update_request_task") as mock_update_request_task,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -384,11 +427,14 @@ class TestRequestUpdate:
         task_update_body: TaskUpdate,
     ):
         task_id = uuid4()
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.update_request_task") as mock_update_request_task:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.update_request_task") as mock_update_request_task,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -410,15 +456,20 @@ class TestRequestUpdate:
         task_update_body: TaskUpdate,
     ):
         task_id = uuid4()
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.update_request_task") as mock_update_request_task:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.update_request_task") as mock_update_request_task,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
-            mock_update_request_task.side_effect = InvalidTaskStatusError("Task is not pending")
+            mock_update_request_task.side_effect = InvalidTaskStatusError(
+                "Task is not pending"
+            )
 
             response = await client.put(
                 f"/v1/requests/{task_id}",
@@ -438,11 +489,14 @@ class TestRequestBatch:
         mock_user: User,
         mock_task_response_list: list[TaskResponse],
     ):
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.create_request_tasks_batch") as mock_create_batch:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.create_request_tasks_batch") as mock_create_batch,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -455,7 +509,7 @@ class TestRequestBatch:
                     "method": mock_task.method,
                     "headers": mock_task.headers,
                     "body": mock_task.body,
-                    "max_attempts": mock_task.max_attempts
+                    "max_attempts": mock_task.max_attempts,
                 }
                 for mock_task in mock_task_response_list
             ]
@@ -475,10 +529,13 @@ class TestRequestBatch:
         valid_token: str,
         mock_user: User,
     ):
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -497,11 +554,14 @@ class TestRequestBatch:
         valid_token: str,
         mock_user: User,
     ):
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.create_request_tasks_batch") as mock_create_batch:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.create_request_tasks_batch") as mock_create_batch,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -509,7 +569,9 @@ class TestRequestBatch:
 
             response = await client.post(
                 "/v1/requests/batch",
-                json=[{"url": "https://example.com", "method": "GET", "max_attempts": 1}],
+                json=[
+                    {"url": "https://example.com", "method": "GET", "max_attempts": 1}
+                ],
                 headers={"Authorization": f"Bearer {valid_token}"},
             )
 
@@ -521,11 +583,14 @@ class TestRequestBatch:
         valid_token: str,
         mock_user: User,
     ):
-        with patch("api.v1.requests.get_db") as mock_get_db, \
-             patch("middleware.auth.get_db") as mock_auth_get_db, \
-             patch("middleware.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.requests.create_request_tasks_batch") as mock_create_batch:
-
+        with (
+            patch("api.v1.requests.get_db") as mock_get_db,
+            patch("middleware.auth.get_db") as mock_auth_get_db,
+            patch(
+                "middleware.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.requests.create_request_tasks_batch") as mock_create_batch,
+        ):
             mock_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_auth_get_db.return_value = AsyncMock(spec=AsyncSession)
             mock_get_user_by_token.return_value = _mock_user_for_auth(mock_user)
@@ -533,7 +598,9 @@ class TestRequestBatch:
 
             response = await client.post(
                 "/v1/requests/batch",
-                json=[{"url": "https://example.com", "method": "GET", "max_attempts": 1}],
+                json=[
+                    {"url": "https://example.com", "method": "GET", "max_attempts": 1}
+                ],
                 headers={"Authorization": f"Bearer {valid_token}"},
             )
 

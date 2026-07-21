@@ -5,10 +5,26 @@ from fastapi.params import Security
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from domain.auth import UserAlreadyExists, UnknownException, get_token, PasswordIsIncorrect, UserDoesNotExists, \
-    create_user, delete_token, refresh_token, get_user_info, get_token_for_docs
+from domain.auth import (
+    UserAlreadyExists,
+    UnknownException,
+    get_token,
+    PasswordIsIncorrect,
+    UserDoesNotExists,
+    create_user,
+    delete_token,
+    refresh_token,
+    get_user_info,
+    get_token_for_docs,
+)
 from middleware.auth import authorization
-from schemas import UserRegisterBody, UserRegisterResponse, UserLoginBody, AccessTokenResponse, User
+from schemas import (
+    UserRegisterBody,
+    UserRegisterResponse,
+    UserLoginBody,
+    AccessTokenResponse,
+    User,
+)
 from schemas.auth import UserMe
 from services.database import get_db
 from services.logger import logger
@@ -24,10 +40,10 @@ async def auth_register(
 ) -> UserRegisterResponse:
     """
     Register a new user in the system.
-    
+
     - **username**: Unique username for the new account
     - **password_hash**: SHA256 hash of the password (64 hex characters)
-    
+
     Returns 409 Conflict if username already exists.
     Returns 500 Internal Server Error if registration fails.
     """
@@ -38,7 +54,9 @@ async def auth_register(
         logger.info("Registration succeeded for username=%s", data.username)
     except UserAlreadyExists:
         auth_attempts_total.labels(type="register", status="conflict").inc()
-        logger.warning("Registration failed: username already exists (%s)", data.username)
+        logger.warning(
+            "Registration failed: username already exists (%s)", data.username
+        )
         raise HTTPException(status_code=status.HTTP_409_CONFLICT)
     except UnknownException:
         auth_attempts_total.labels(type="register", status="error").inc()
@@ -54,10 +72,10 @@ async def auth_login(
 ) -> AccessTokenResponse:
     """
     Authenticate user and retrieve access token.
-    
+
     - **username**: User's username
     - **password_hash**: SHA256 hash of the password
-    
+
     Returns 401 Unauthorized if password is incorrect.
     Returns 404 Not Found if user does not exist.
     """
@@ -84,7 +102,7 @@ async def auth_logout(
 ) -> Response:
     """
     Invalidate the current user's access token and log them out.
-    
+
     Requires authentication. After logout, the token will no longer be valid.
     Returns 200 OK on successful logout.
     """
@@ -105,7 +123,7 @@ async def auth_refresh(
 ) -> AccessTokenResponse:
     """
     Refresh the current user's access token with a new valid token.
-    
+
     Requires authentication. Extends the token lifetime by 7 days.
     Returns 404 Not Found if user does not exist.
     """
@@ -126,7 +144,7 @@ async def auth_verify(
 ) -> UserMe:
     """
     Get information about the current authenticated user.
-    
+
     Requires authentication. Returns user's username and token expiration time.
     """
     logger.info("User profile requested for user_id=%s", user.id)
@@ -146,13 +164,20 @@ async def token(
 ) -> AccessTokenResponse:
     logger.info("Docs token request for username=%s", form_data.username)
     try:
-        token = await get_token_for_docs(session, form_data.username, form_data.password)
+        token = await get_token_for_docs(
+            session, form_data.username, form_data.password
+        )
         logger.debug("Docs token issued for username=%s", form_data.username)
     except PasswordIsIncorrect:
-        logger.warning("Docs token request failed: invalid password for username=%s", form_data.username)
+        logger.warning(
+            "Docs token request failed: invalid password for username=%s",
+            form_data.username,
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     except UserDoesNotExists:
-        logger.warning("Docs token request failed: user not found for username=%s", form_data.username)
+        logger.warning(
+            "Docs token request failed: user not found for username=%s",
+            form_data.username,
+        )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return token
-

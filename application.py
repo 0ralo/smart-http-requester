@@ -35,7 +35,10 @@ async def pre_check():
         logger.debug("RabbitMQ connection is established")
         await setup_rabbitmq_with_retries()
         logger.debug("RabbitMQ structure is established")
-        logger.debug("%s will be used as hash algorithm", "argon" if settings.use_argon else "bcrypt")
+        logger.debug(
+            "%s will be used as hash algorithm",
+            "argon" if settings.use_argon else "bcrypt",
+        )
     except Exception:
         logger.exception("Startup pre-check failed")
         raise
@@ -55,12 +58,13 @@ def get_description():
         content = f.read()
     return content
 
+
 app = FastAPI(
     title="HTTP-requester API documentation",
     lifespan=lifespan,
     openapi_url="/api/openapi.json",
     debug=settings.debug,
-    description=get_description()
+    description=get_description(),
 )
 if os.getenv("PYTEST_RUNNING") != "1":
     app.add_middleware(RateLimitMiddleware)

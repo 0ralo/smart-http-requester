@@ -1,4 +1,5 @@
 """Tests for authentication endpoints."""
+
 from unittest.mock import patch, AsyncMock, MagicMock
 
 import pytest
@@ -23,7 +24,7 @@ class TestAuthRegister:
 
             response = await client.post(
                 "/v1/auth/register",
-                json={"username": valid_username, "password_hash": valid_password_hash}
+                json={"username": valid_username, "password_hash": valid_password_hash},
             )
 
             assert response.status_code == 200
@@ -47,7 +48,7 @@ class TestAuthRegister:
 
             response = await client.post(
                 "/v1/auth/register",
-                json={"username": valid_username, "password_hash": valid_password_hash}
+                json={"username": valid_username, "password_hash": valid_password_hash},
             )
 
             assert response.status_code == 409
@@ -67,7 +68,7 @@ class TestAuthRegister:
 
             response = await client.post(
                 "/v1/auth/register",
-                json={"username": valid_username, "password_hash": valid_password_hash}
+                json={"username": valid_username, "password_hash": valid_password_hash},
             )
 
             assert response.status_code == 500
@@ -81,7 +82,7 @@ class TestAuthRegister:
         """Test registration fails with invalid password hash length."""
         response = await client.post(
             "/v1/auth/register",
-            json={"username": valid_username, "password_hash": "short"}
+            json={"username": valid_username, "password_hash": "short"},
         )
 
         assert response.status_code == 422
@@ -94,8 +95,7 @@ class TestAuthRegister:
     ):
         """Test registration fails when username is missing."""
         response = await client.post(
-            "/v1/auth/register",
-            json={"password_hash": valid_password_hash}
+            "/v1/auth/register", json={"password_hash": valid_password_hash}
         )
 
         assert response.status_code == 422
@@ -108,8 +108,7 @@ class TestAuthRegister:
     ):
         """Test registration fails when password_hash is missing."""
         response = await client.post(
-            "/v1/auth/register",
-            json={"username": valid_username}
+            "/v1/auth/register", json={"username": valid_username}
         )
 
         assert response.status_code == 422
@@ -128,7 +127,7 @@ class TestAuthRegister:
 
             response = await client.post(
                 "/v1/auth/register",
-                json={"username": valid_username, "password_hash": valid_password_hash}
+                json={"username": valid_username, "password_hash": valid_password_hash},
             )
 
             assert response.status_code == 200
@@ -149,7 +148,7 @@ class TestAuthRegister:
 
             response = await client.post(
                 "/v1/auth/register",
-                json={"username": valid_username, "password_hash": valid_password_hash}
+                json={"username": valid_username, "password_hash": valid_password_hash},
             )
 
             assert response.status_code == 409
@@ -174,7 +173,7 @@ class TestAuthLogin:
 
             response = await client.post(
                 "/v1/auth/login",
-                json={"username": valid_username, "password_hash": valid_password_hash}
+                json={"username": valid_username, "password_hash": valid_password_hash},
             )
 
             assert response.status_code == 200
@@ -198,7 +197,7 @@ class TestAuthLogin:
 
             response = await client.post(
                 "/v1/auth/login",
-                json={"username": valid_username, "password_hash": valid_password_hash}
+                json={"username": valid_username, "password_hash": valid_password_hash},
             )
 
             assert response.status_code == 401
@@ -218,7 +217,7 @@ class TestAuthLogin:
 
             response = await client.post(
                 "/v1/auth/login",
-                json={"username": valid_username, "password_hash": valid_password_hash}
+                json={"username": valid_username, "password_hash": valid_password_hash},
             )
 
             assert response.status_code == 404
@@ -232,7 +231,7 @@ class TestAuthLogin:
         """Test login fails with invalid password hash format."""
         response = await client.post(
             "/v1/auth/login",
-            json={"username": valid_username, "password_hash": "invalid"}
+            json={"username": valid_username, "password_hash": "invalid"},
         )
 
         assert response.status_code == 422
@@ -245,8 +244,7 @@ class TestAuthLogin:
     ):
         """Test login fails when username is missing."""
         response = await client.post(
-            "/v1/auth/login",
-            json={"password_hash": valid_password_hash}
+            "/v1/auth/login", json={"password_hash": valid_password_hash}
         )
 
         assert response.status_code == 422
@@ -259,8 +257,7 @@ class TestAuthLogin:
     ):
         """Test login fails when password_hash is missing."""
         response = await client.post(
-            "/v1/auth/login",
-            json={"username": valid_username}
+            "/v1/auth/login", json={"username": valid_username}
         )
 
         assert response.status_code == 422
@@ -279,7 +276,7 @@ class TestAuthLogin:
 
             response = await client.post(
                 "/v1/auth/login",
-                json={"username": valid_username, "password_hash": valid_password_hash}
+                json={"username": valid_username, "password_hash": valid_password_hash},
             )
 
             assert response.status_code == 200
@@ -300,7 +297,7 @@ class TestAuthLogin:
 
             response = await client.post(
                 "/v1/auth/login",
-                json={"username": valid_username, "password_hash": valid_password_hash}
+                json={"username": valid_username, "password_hash": valid_password_hash},
             )
 
             assert response.status_code == 401
@@ -321,7 +318,7 @@ class TestAuthLogin:
 
             response = await client.post(
                 "/v1/auth/login",
-                json={"username": valid_username, "password_hash": valid_password_hash}
+                json={"username": valid_username, "password_hash": valid_password_hash},
             )
 
             assert response.status_code == 404
@@ -343,7 +340,7 @@ class TestAuthLogin:
             for username in test_usernames:
                 response = await client.post(
                     "/v1/auth/login",
-                    json={"username": username, "password_hash": valid_password_hash}
+                    json={"username": username, "password_hash": valid_password_hash},
                 )
                 assert response.status_code == 200
 
@@ -366,7 +363,7 @@ class TestAuthToken:
 
             response = await client.post(
                 "/v1/auth/token",
-                data={"username": valid_username, "password": valid_password}
+                data={"username": valid_username, "password": valid_password},
             )
 
             assert response.status_code == 200
@@ -390,7 +387,7 @@ class TestAuthToken:
 
             response = await client.post(
                 "/v1/auth/token",
-                data={"username": valid_username, "password": valid_password}
+                data={"username": valid_username, "password": valid_password},
             )
 
             assert response.status_code == 401
@@ -410,7 +407,7 @@ class TestAuthToken:
 
             response = await client.post(
                 "/v1/auth/token",
-                data={"username": valid_username, "password": valid_password}
+                data={"username": valid_username, "password": valid_password},
             )
 
             assert response.status_code == 404
@@ -423,8 +420,7 @@ class TestAuthToken:
     ):
         """Test token endpoint fails when username is missing."""
         response = await client.post(
-            "/v1/auth/token",
-            data={"password": valid_password}
+            "/v1/auth/token", data={"password": valid_password}
         )
 
         assert response.status_code == 422
@@ -437,8 +433,7 @@ class TestAuthToken:
     ):
         """Test token endpoint fails when password is missing."""
         response = await client.post(
-            "/v1/auth/token",
-            data={"username": valid_username}
+            "/v1/auth/token", data={"username": valid_username}
         )
 
         assert response.status_code == 422
@@ -456,9 +451,13 @@ class TestAuthLogout:
         mock_metrics,
     ):
         """Test successful user logout."""
-        with patch("services.database.get_db") as mock_get_db, \
-             patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.auth.delete_token") as mock_delete_token:
+        with (
+            patch("services.database.get_db") as mock_get_db,
+            patch(
+                "repository.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.auth.delete_token") as mock_delete_token,
+        ):
 
             async def mock_get_db_impl():
                 yield AsyncMock(spec=AsyncSession)
@@ -466,15 +465,14 @@ class TestAuthLogout:
             mock_user_obj = MagicMock(
                 id=mock_user.id,
                 username=mock_user.username,
-                privileges=mock_user.privileges
+                privileges=mock_user.privileges,
             )
             mock_get_user_by_token.return_value = mock_user_obj
             mock_get_db.return_value = mock_get_db_impl()
             mock_delete_token.return_value = None
 
             response = await client.post(
-                "/v1/auth/logout",
-                headers={"Authorization": f"Bearer {valid_token}"}
+                "/v1/auth/logout", headers={"Authorization": f"Bearer {valid_token}"}
             )
 
             assert response.status_code == 200
@@ -495,8 +493,7 @@ class TestAuthLogout:
     ):
         """Test logout fails with invalid token."""
         response = await client.post(
-            "/v1/auth/logout",
-            headers={"Authorization": "Bearer invalid-token"}
+            "/v1/auth/logout", headers={"Authorization": "Bearer invalid-token"}
         )
         assert response.status_code == 401
 
@@ -509,9 +506,11 @@ class TestAuthLogout:
         """Test logout fails when user does not exist."""
         from domain.auth import UserDoesNotExists
 
-        with patch("services.database.get_db") as mock_get_db, \
-             patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user, \
-             patch("api.v1.auth.delete_token") as mock_delete_token:
+        with (
+            patch("services.database.get_db") as mock_get_db,
+            patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user,
+            patch("api.v1.auth.delete_token") as mock_delete_token,
+        ):
 
             async def mock_get_db_impl():
                 yield AsyncMock(spec=AsyncSession)
@@ -521,8 +520,7 @@ class TestAuthLogout:
             mock_delete_token.side_effect = UserDoesNotExists
 
             response = await client.post(
-                "/v1/auth/logout",
-                headers={"Authorization": f"Bearer {valid_token}"}
+                "/v1/auth/logout", headers={"Authorization": f"Bearer {valid_token}"}
             )
 
             assert response.status_code == 401
@@ -537,9 +535,11 @@ class TestAuthLogout:
         """Test logout returns 400 when delete_token reports missing user."""
         from domain.auth import UserDoesNotExists
 
-        with patch("services.database.get_db") as mock_get_db, \
-             patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user, \
-             patch("api.v1.auth.delete_token") as mock_delete_token:
+        with (
+            patch("services.database.get_db") as mock_get_db,
+            patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user,
+            patch("api.v1.auth.delete_token") as mock_delete_token,
+        ):
 
             async def mock_get_db_impl():
                 yield AsyncMock(spec=AsyncSession)
@@ -553,8 +553,7 @@ class TestAuthLogout:
             mock_delete_token.side_effect = UserDoesNotExists
 
             response = await client.post(
-                "/v1/auth/logout",
-                headers={"Authorization": f"Bearer {valid_token}"}
+                "/v1/auth/logout", headers={"Authorization": f"Bearer {valid_token}"}
             )
 
             assert response.status_code == 400
@@ -573,9 +572,13 @@ class TestAuthRefresh:
         mock_metrics,
     ):
         """Test successful token refresh."""
-        with patch("services.database.get_db") as mock_get_db, \
-             patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.auth.refresh_token") as mock_refresh:
+        with (
+            patch("services.database.get_db") as mock_get_db,
+            patch(
+                "repository.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.auth.refresh_token") as mock_refresh,
+        ):
 
             async def mock_get_db_impl():
                 yield AsyncMock(spec=AsyncSession)
@@ -583,15 +586,14 @@ class TestAuthRefresh:
             mock_user_obj = MagicMock(
                 id=mock_user.id,
                 username=mock_user.username,
-                privileges=mock_user.privileges
+                privileges=mock_user.privileges,
             )
             mock_get_user_by_token.return_value = mock_user_obj
             mock_get_db.return_value = mock_get_db_impl()
             mock_refresh.return_value = mock_token_response
 
             response = await client.post(
-                "/v1/auth/refresh",
-                headers={"Authorization": f"Bearer {valid_token}"}
+                "/v1/auth/refresh", headers={"Authorization": f"Bearer {valid_token}"}
             )
 
             assert response.status_code == 200
@@ -615,8 +617,7 @@ class TestAuthRefresh:
     ):
         """Test refresh fails with invalid token."""
         response = await client.post(
-            "/v1/auth/refresh",
-            headers={"Authorization": "Bearer invalid-token"}
+            "/v1/auth/refresh", headers={"Authorization": "Bearer invalid-token"}
         )
         assert response.status_code == 401
 
@@ -629,9 +630,11 @@ class TestAuthRefresh:
         """Test refresh fails when user does not exist."""
         from domain.auth import UserDoesNotExists
 
-        with patch("services.database.get_db") as mock_get_db, \
-             patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user, \
-             patch("api.v1.auth.refresh_token") as mock_refresh:
+        with (
+            patch("services.database.get_db") as mock_get_db,
+            patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user,
+            patch("api.v1.auth.refresh_token") as mock_refresh,
+        ):
 
             async def mock_get_db_impl():
                 yield AsyncMock(spec=AsyncSession)
@@ -641,8 +644,7 @@ class TestAuthRefresh:
             mock_refresh.side_effect = UserDoesNotExists
 
             response = await client.post(
-                "/v1/auth/refresh",
-                headers={"Authorization": f"Bearer {valid_token}"}
+                "/v1/auth/refresh", headers={"Authorization": f"Bearer {valid_token}"}
             )
 
             assert response.status_code == 401
@@ -657,9 +659,11 @@ class TestAuthRefresh:
         """Test refresh returns 404 when refresh_token reports missing user."""
         from domain.auth import UserDoesNotExists
 
-        with patch("services.database.get_db") as mock_get_db, \
-             patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user, \
-             patch("api.v1.auth.refresh_token") as mock_refresh:
+        with (
+            patch("services.database.get_db") as mock_get_db,
+            patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user,
+            patch("api.v1.auth.refresh_token") as mock_refresh,
+        ):
 
             async def mock_get_db_impl():
                 yield AsyncMock(spec=AsyncSession)
@@ -673,8 +677,7 @@ class TestAuthRefresh:
             mock_refresh.side_effect = UserDoesNotExists
 
             response = await client.post(
-                "/v1/auth/refresh",
-                headers={"Authorization": f"Bearer {valid_token}"}
+                "/v1/auth/refresh", headers={"Authorization": f"Bearer {valid_token}"}
             )
 
             assert response.status_code == 404
@@ -693,9 +696,13 @@ class TestAuthMe:
         mock_metrics,
     ):
         """Test successful retrieval of user info."""
-        with patch("services.database.get_db") as mock_get_db, \
-             patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user_by_token, \
-             patch("api.v1.auth.get_user_info") as mock_get_info:
+        with (
+            patch("services.database.get_db") as mock_get_db,
+            patch(
+                "repository.auth.AuthRepository.get_user_by_token"
+            ) as mock_get_user_by_token,
+            patch("api.v1.auth.get_user_info") as mock_get_info,
+        ):
 
             async def mock_get_db_impl():
                 yield AsyncMock(spec=AsyncSession)
@@ -703,15 +710,14 @@ class TestAuthMe:
             mock_user_obj = MagicMock(
                 id=mock_user.id,
                 username=mock_user.username,
-                privileges=mock_user.privileges
+                privileges=mock_user.privileges,
             )
             mock_get_user_by_token.return_value = mock_user_obj
             mock_get_db.return_value = mock_get_db_impl()
             mock_get_info.return_value = mock_user_me
 
             response = await client.get(
-                "/v1/auth/me",
-                headers={"Authorization": f"Bearer {valid_token}"}
+                "/v1/auth/me", headers={"Authorization": f"Bearer {valid_token}"}
             )
 
             assert response.status_code == 200
@@ -735,8 +741,7 @@ class TestAuthMe:
     ):
         """Test me endpoint fails with invalid token."""
         response = await client.get(
-            "/v1/auth/me",
-            headers={"Authorization": "Bearer invalid-token"}
+            "/v1/auth/me", headers={"Authorization": "Bearer invalid-token"}
         )
         assert response.status_code == 401
 
@@ -749,9 +754,11 @@ class TestAuthMe:
         """Test me endpoint fails when user does not exist."""
         from domain.auth import UserDoesNotExists
 
-        with patch("services.database.get_db") as mock_get_db, \
-             patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user, \
-             patch("api.v1.auth.get_user_info") as mock_get_info:
+        with (
+            patch("services.database.get_db") as mock_get_db,
+            patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user,
+            patch("api.v1.auth.get_user_info") as mock_get_info,
+        ):
 
             async def mock_get_db_impl():
                 yield AsyncMock(spec=AsyncSession)
@@ -761,8 +768,7 @@ class TestAuthMe:
             mock_get_info.side_effect = UserDoesNotExists
 
             response = await client.get(
-                "/v1/auth/me",
-                headers={"Authorization": f"Bearer {valid_token}"}
+                "/v1/auth/me", headers={"Authorization": f"Bearer {valid_token}"}
             )
 
             assert response.status_code == 401
@@ -777,9 +783,11 @@ class TestAuthMe:
         """Test me endpoint returns 404 when service reports missing user."""
         from domain.auth import UserDoesNotExists
 
-        with patch("services.database.get_db") as mock_get_db, \
-             patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user, \
-             patch("api.v1.auth.get_user_info") as mock_get_info:
+        with (
+            patch("services.database.get_db") as mock_get_db,
+            patch("repository.auth.AuthRepository.get_user_by_token") as mock_get_user,
+            patch("api.v1.auth.get_user_info") as mock_get_info,
+        ):
 
             async def mock_get_db_impl():
                 yield AsyncMock(spec=AsyncSession)
@@ -793,8 +801,7 @@ class TestAuthMe:
             mock_get_info.side_effect = UserDoesNotExists
 
             response = await client.get(
-                "/v1/auth/me",
-                headers={"Authorization": f"Bearer {valid_token}"}
+                "/v1/auth/me", headers={"Authorization": f"Bearer {valid_token}"}
             )
 
             assert response.status_code == 404

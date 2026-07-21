@@ -6,9 +6,7 @@ from pydantic import BaseModel, Field, ConfigDict, HttpUrl
 
 
 class BaseModelFromAttributes(BaseModel):
-    model_config = ConfigDict(
-        from_attributes=True
-    )
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TaskCreate(BaseModel):

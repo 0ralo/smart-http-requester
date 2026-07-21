@@ -29,3 +29,6 @@ dev = [
     "ruff>=0.15.22",
     "bandit>=1.9.4",
 ]
+
+[tool.bandit]
+exclude_dirs = [".venv", "tests"]

@@ -28,18 +28,14 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             body_size = int(request.headers.get("content-length", 0))
         except ValueError:
             body_size = 0
-        
+
         if body_size > 0:
-            http_request_size_bytes.labels(
-                method=method,
-                endpoint=endpoint
-            ).observe(body_size)
+            http_request_size_bytes.labels(method=method, endpoint=endpoint).observe(
+                body_size
+            )
 
         # Mark request as in progress
-        http_requests_in_progress.labels(
-            method=method,
-            endpoint=endpoint
-        ).inc()
+        http_requests_in_progress.labels(method=method, endpoint=endpoint).inc()
 
         # Record start time
         start_time = time.time()
@@ -52,16 +48,13 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             # Record duration
             duration = time.time() - start_time
             http_request_duration_seconds.labels(
-                method=method,
-                endpoint=endpoint
+                method=method, endpoint=endpoint
             ).observe(duration)
 
             # Record total requests and status
             status_code = response.status_code
             http_requests_total.labels(
-                method=method,
-                endpoint=endpoint,
-                status=status_code
+                method=method, endpoint=endpoint, status=status_code
             ).inc()
 
             # Record response size if available
@@ -69,8 +62,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
                 try:
                     response_size = int(response.headers["content-length"])
                     http_response_size_bytes.labels(
-                        method=method,
-                        endpoint=endpoint
+                        method=method, endpoint=endpoint
                     ).observe(response_size)
                 except ValueError:
                     pass
@@ -86,7 +78,4 @@ class MetricsMiddleware(BaseHTTPMiddleware):
 
         finally:
             # Decrement in-progress counter
-            http_requests_in_progress.labels(
-                method=method,
-                endpoint=endpoint
-            ).dec()
+            http_requests_in_progress.labels(method=method, endpoint=endpoint).dec()

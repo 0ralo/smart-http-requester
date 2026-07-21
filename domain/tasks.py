@@ -13,16 +13,19 @@ from services.metrics import tasks_created_total, tasks_completed_total
 # Custom exceptions
 class TaskNotFoundError(Exception):
     """Task does not exist"""
+
     pass
 
 
 class AccessDeniedError(Exception):
     """User does not have access to this task"""
+
     pass
 
 
 class InvalidTaskStatusError(Exception):
     """Task is in an invalid state for this operation"""
+
     pass
 
 
@@ -33,18 +36,18 @@ async def create_request_task(
 ) -> TaskResponse:
     """
     Create a new HTTP request task and publish it to the queue.
-    
+
     Args:
         user_id: ID of the user creating the task
         task_data: Task creation data (url, method, headers, body, max_attempts)
         session: Database session
-        
+
     Returns:
         Created TaskResponse object
     """
     repo = TaskRepository(session)
     logger.info("Creating request task for user_id=%s url=%s", user_id, task_data.url)
-    
+
     # Create task in database
     task = await repo.create_task(
         user_id=user_id,
@@ -81,7 +84,9 @@ async def create_request_tasks_batch(
         raise ValueError("At least one task must be provided.")
 
     repo = TaskRepository(session)
-    logger.info("Creating batch of %s request tasks for user_id=%s", len(tasks_data), user_id)
+    logger.info(
+        "Creating batch of %s request tasks for user_id=%s", len(tasks_data), user_id
+    )
     tasks = await repo.create_tasks_batch(
         user_id=user_id,
         tasks_data=tasks_data,
@@ -91,7 +96,9 @@ async def create_request_tasks_batch(
         payload = json.dumps({"task_id": str(task.id)})
         await publish_task(payload, attempts=task.max_attempts)
 
-    logger.info("Batch request tasks published for user_id=%s count=%s", user_id, len(tasks))
+    logger.info(
+        "Batch request tasks published for user_id=%s count=%s", user_id, len(tasks)
+    )
     tasks_created_total.inc(len(tasks))
     return tasks
 
@@ -103,15 +110,15 @@ async def get_request_task(
 ) -> TaskResponse:
     """
     Get task information with ownership verification.
-    
+
     Args:
         task_id: ID of the task to retrieve
         user_id: ID of the user requesting the task
         session: Database session
-        
+
     Returns:
         TaskResponse object
-        
+
     Raises:
         TaskNotFoundError: Task does not exist
         AccessDeniedError: User does not own the task
@@ -119,15 +126,15 @@ async def get_request_task(
     repo = TaskRepository(session)
     logger.debug("Fetching request task: task_id=%s user_id=%s", task_id, user_id)
     result = await repo.get_task_by_id(task_id)
-    
+
     if result is None:
         raise TaskNotFoundError(f"Task {task_id} not found")
-    
+
     task, task_user_id = result
-    
+
     if task_user_id != user_id:
         raise AccessDeniedError(f"User does not have access to task {task_id}")
-    
+
     return task
 
 
@@ -139,13 +146,13 @@ async def get_user_request_tasks(
 ) -> list[TaskResponse]:
     """
     Get all tasks for a user with pagination.
-    
+
     Args:
         user_id: ID of the user
         skip: Number of tasks to skip
         limit: Number of tasks to return
         session: Database session
-        
+
     Returns:
         List of TaskResponse objects sorted by update time (descending)
     """
@@ -162,15 +169,15 @@ async def cancel_request_task(
 ) -> TaskResponse:
     """
     Cancel a task and remove it from the processing queue.
-    
+
     Args:
         task_id: ID of the task to cancel
         user_id: ID of the user requesting cancellation
         session: Database session
-        
+
     Returns:
         Updated TaskResponse with 'canceled' status
-        
+
     Raises:
         TaskNotFoundError: Task does not exist
         AccessDeniedError: User does not own the task
@@ -179,16 +186,16 @@ async def cancel_request_task(
     repo = TaskRepository(session)
     logger.info("Canceling request task: task_id=%s user_id=%s", task_id, user_id)
     result = await repo.cancel_task(task_id)
-    
+
     if result is None:
         raise TaskNotFoundError(f"Task {task_id} not found")
-    
+
     task, task_user_id, current_status = result
-    
+
     if task_user_id != user_id:
         raise AccessDeniedError(f"User does not have access to task {task_id}")
-    
-    if current_status != 'pending':
+
+    if current_status != "pending":
         raise InvalidTaskStatusError(
             f"Task cannot be canceled. Current status: {current_status}. "
             f"Only pending tasks can be canceled."
@@ -207,16 +214,16 @@ async def update_request_task(
 ) -> TaskResponse:
     """
     Update task data (url, method, headers, body).
-    
+
     Args:
         task_id: ID of the task to update
         user_id: ID of the user requesting the update
         task_data: Updated task data
         session: Database session
-        
+
     Returns:
         Updated TaskResponse
-        
+
     Raises:
         TaskNotFoundError: Task does not exist
         AccessDeniedError: User does not own the task
@@ -231,19 +238,19 @@ async def update_request_task(
         headers=task_data.headers,
         body=task_data.body,
     )
-    
+
     if result is None:
         raise TaskNotFoundError(f"Task {task_id} not found")
-    
+
     task, task_user_id, current_status = result
-    
+
     if task_user_id != user_id:
         raise AccessDeniedError(f"User does not have access to task {task_id}")
-    
-    if current_status != 'pending':
+
+    if current_status != "pending":
         raise InvalidTaskStatusError(
             f"Task cannot be updated. Current status: {current_status}. "
             f"Only pending tasks can be updated."
         )
-    
+
     return task

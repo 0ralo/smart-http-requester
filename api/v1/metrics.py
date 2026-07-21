@@ -11,14 +11,11 @@ metrics_router = APIRouter(tags=["metrics"])
 async def metrics() -> Response:
     """
     Export metrics in Prometheus text format.
-    
+
     This endpoint returns all collected metrics in the Prometheus exposition format.
     Typically scraped by Prometheus scraper at regular intervals.
     """
-    return Response(
-        content=generate_latest(),
-        media_type=CONTENT_TYPE_LATEST
-    )
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @metrics_router.get("/fake_status", summary="test-endpoint", include_in_schema=False)

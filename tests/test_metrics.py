@@ -1,4 +1,5 @@
 """Tests for the Prometheus metrics endpoint."""
+
 from httpx import AsyncClient
 import pytest
 

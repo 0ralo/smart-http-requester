@@ -24,35 +24,41 @@ class TaskRepository:
         headers: Optional[dict],
         body: Optional[str],
         max_attempts: int,
-        status: str = 'pending'
+        status: str = "pending",
     ) -> TaskResponse:
         """Create a new task in the database"""
-        query = await self.session.execute(text("""
+        query = await self.session.execute(
+            text("""
             INSERT INTO tasks (user_id, url, method, headers, body, max_attempts, status, attempt_count)
             VALUES (:user_id, :url, :method, :headers, :body, :max_attempts, :status, 0)
             RETURNING id, user_id, url, method, headers, body, status, attempt_count, max_attempts, result, created_at, updated_at
         """).bindparams(
-            BindParameter("user_id", user_id, Integer),
-            BindParameter("url", url, TEXT),
-            BindParameter("method", method, TEXT),
-            BindParameter("headers", headers, JSONB),
-            BindParameter("body", body, TEXT),
-            BindParameter("max_attempts", max_attempts, Integer),
-            BindParameter("status", status, TEXT),
-        ))
+                BindParameter("user_id", user_id, Integer),
+                BindParameter("url", url, TEXT),
+                BindParameter("method", method, TEXT),
+                BindParameter("headers", headers, JSONB),
+                BindParameter("body", body, TEXT),
+                BindParameter("max_attempts", max_attempts, Integer),
+                BindParameter("status", status, TEXT),
+            )
+        )
         raw_task = query.fetchone()
-        logger.debug("Repository: task created for user_id=%s task_id=%s", user_id, raw_task.id)
+        logger.debug(
+            "Repository: task created for user_id=%s task_id=%s", user_id, raw_task.id
+        )
         return TaskResponse.model_validate(raw_task)
 
     async def get_task_by_id(self, task_id: UUID) -> Optional[tuple[TaskResponse, int]]:
         """Get task by ID with user_id for ownership check"""
-        query = await self.session.execute(text("""
+        query = await self.session.execute(
+            text("""
             SELECT id, user_id, url, method, headers, body, status, attempt_count, max_attempts, result, created_at, updated_at
             FROM tasks
             WHERE id = :task_id
         """).bindparams(
-            BindParameter("task_id", task_id, UUIDType),
-        ))
+                BindParameter("task_id", task_id, UUIDType),
+            )
+        )
         raw_task = query.fetchone()
         if raw_task is None:
             logger.debug("Repository: task not found task_id=%s", task_id)
@@ -78,78 +84,100 @@ class TaskRepository:
             values.append(
                 f"(:user_id, :url_{idx}, :method_{idx}, :headers_{idx}, :body_{idx}, :max_attempts_{idx}, 'pending', 0)"
             )
-            bindparams.extend([
-                BindParameter(f"url_{idx}", task.url, TEXT),
-                BindParameter(f"method_{idx}", task.method, TEXT),
-                BindParameter(f"headers_{idx}", task.headers, JSONB),
-                BindParameter(f"body_{idx}", task.body, TEXT),
-                BindParameter(f"max_attempts_{idx}", task.max_attempts, Integer),
-            ])
+            bindparams.extend(
+                [
+                    BindParameter(f"url_{idx}", task.url, TEXT),
+                    BindParameter(f"method_{idx}", task.method, TEXT),
+                    BindParameter(f"headers_{idx}", task.headers, JSONB),
+                    BindParameter(f"body_{idx}", task.body, TEXT),
+                    BindParameter(f"max_attempts_{idx}", task.max_attempts, Integer),
+                ]
+            )
 
-        logger.debug("Repository: creating batch of %s tasks for user_id=%s", len(tasks_data), user_id)
-        query = await self.session.execute(text(f"""
+        logger.debug(
+            "Repository: creating batch of %s tasks for user_id=%s",
+            len(tasks_data),
+            user_id,
+        )
+        query = await self.session.execute(
+            text(
+                f"""
             INSERT INTO tasks (user_id, url, method, headers, body, max_attempts, status, attempt_count)
-            VALUES {', '.join(values)}
+            VALUES {", ".join(values)}
             RETURNING id, user_id, url, method, headers, body, status, attempt_count, max_attempts, result, created_at, updated_at
-        """).bindparams(*bindparams))  # nosec B608 - Secure, all parameters are literal, others passed through Bind Parameter
+        """  # nosec B608
+            ).bindparams(*bindparams)
+        )
 
         raw_tasks = query.fetchall()
         return [TaskResponse.model_validate(task) for task in raw_tasks]
 
-    async def get_user_tasks(self, user_id: int, skip: int = 0, limit: int = 20) -> list[TaskResponse]:
+    async def get_user_tasks(
+        self, user_id: int, skip: int = 0, limit: int = 20
+    ) -> list[TaskResponse]:
         """Get all tasks for a user with pagination, sorted by updated_at (desc) or created_at"""
-        query = await self.session.execute(text("""
+        query = await self.session.execute(
+            text("""
             SELECT id, user_id, url, method, headers, body, status, attempt_count, max_attempts, result, created_at, updated_at
             FROM tasks
             WHERE user_id = :user_id
             ORDER BY COALESCE(updated_at, created_at) DESC
             LIMIT :limit OFFSET :skip
         """).bindparams(
-            BindParameter("user_id", user_id, Integer),
-            BindParameter("skip", skip, Integer),
-            BindParameter("limit", limit, Integer),
-        ))
+                BindParameter("user_id", user_id, Integer),
+                BindParameter("skip", skip, Integer),
+                BindParameter("limit", limit, Integer),
+            )
+        )
         raw_tasks = query.fetchall()
         return [TaskResponse.model_validate(task) for task in raw_tasks]
 
-    async def cancel_task(self, task_id: UUID) -> Optional[tuple[TaskResponse, int, str]]:
+    async def cancel_task(
+        self, task_id: UUID
+    ) -> Optional[tuple[TaskResponse, int, str]]:
         """
-        Cancel task by setting status to canceled. 
+        Cancel task by setting status to canceled.
         Returns tuple (TaskResponse, user_id, old_status) if successful, None if task not found
         """
         # First get the current status and user_id
-        query = await self.session.execute(text("""
+        query = await self.session.execute(
+            text("""
             SELECT user_id, status
             FROM tasks
             WHERE id = :task_id
         """).bindparams(
-            BindParameter("task_id", task_id, UUIDType),
-        ))
+                BindParameter("task_id", task_id, UUIDType),
+            )
+        )
         result = query.fetchone()
         if result is None:
             return None
-        
+
         user_id = result.user_id
         current_status = result.status
-        
+
         # Update only if status is pending
-        if current_status == 'pending':
-            await self.session.execute(text("""
+        if current_status == "pending":
+            await self.session.execute(
+                text("""
                 UPDATE tasks
                 SET status = 'canceled', updated_at = NOW()
                 WHERE id = :task_id
             """).bindparams(
-                BindParameter("task_id", task_id, UUIDType),
-            ))
-        
+                    BindParameter("task_id", task_id, UUIDType),
+                )
+            )
+
         # Get updated task info
-        query = await self.session.execute(text("""
+        query = await self.session.execute(
+            text("""
             SELECT id, user_id, url, method, headers, body, status, attempt_count, max_attempts, result, created_at, updated_at
             FROM tasks
             WHERE id = :task_id
         """).bindparams(
-            BindParameter("task_id", task_id, UUIDType),
-        ))
+                BindParameter("task_id", task_id, UUIDType),
+            )
+        )
         raw_task = query.fetchone()
         task = TaskResponse.model_validate(raw_task)
 
@@ -168,44 +196,50 @@ class TaskRepository:
         Returns tuple (TaskResponse, user_id, status) if successful, None if task not found
         """
         # Get current status and user_id
-        query = await self.session.execute(text("""
+        query = await self.session.execute(
+            text("""
             SELECT user_id, status
             FROM tasks
             WHERE id = :task_id
         """).bindparams(
-            BindParameter("task_id", task_id, UUIDType),
-        ))
+                BindParameter("task_id", task_id, UUIDType),
+            )
+        )
         result = query.fetchone()
         if result is None:
             return None
-        
+
         user_id = result.user_id
         current_status = result.status
-        
+
         # Update task
-        await self.session.execute(text("""
+        await self.session.execute(
+            text("""
             UPDATE tasks
             SET url = :url, method = :method, headers = :headers, body = :body, updated_at = NOW()
             WHERE id = :task_id
         """).bindparams(
-            BindParameter("task_id", task_id, UUIDType),
-            BindParameter("url", url, TEXT),
-            BindParameter("method", method, TEXT),
-            BindParameter("headers", headers, JSONB),
-            BindParameter("body", body, TEXT),
-        ))
-        
+                BindParameter("task_id", task_id, UUIDType),
+                BindParameter("url", url, TEXT),
+                BindParameter("method", method, TEXT),
+                BindParameter("headers", headers, JSONB),
+                BindParameter("body", body, TEXT),
+            )
+        )
+
         # Get updated task info
-        query = await self.session.execute(text("""
+        query = await self.session.execute(
+            text("""
             SELECT id, user_id, url, method, headers, body, status, attempt_count, max_attempts, result, created_at, updated_at
             FROM tasks
             WHERE id = :task_id
         """).bindparams(
-            BindParameter("task_id", task_id, UUIDType),
-        ))
+                BindParameter("task_id", task_id, UUIDType),
+            )
+        )
         raw_task = query.fetchone()
         task = TaskResponse.model_validate(raw_task)
-        
+
         # If status changed (unlikely here), publish update
         try:
             new_status = task.status
@@ -219,10 +253,11 @@ class TaskRepository:
         return task, user_id, current_status
 
     async def confirm_rmq_task(self, id: uuid.UUID):
-        await self.session.execute(text("""
+        await self.session.execute(
+            text("""
             update tasks set status = 'pending' where id=:id and status = 'BEFORE RMQ'
         """).bindparams(
-            BindParameter("id", id, UUIDType),
-        ))
+                BindParameter("id", id, UUIDType),
+            )
+        )
         await self.session.commit()
-

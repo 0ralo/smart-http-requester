@@ -23,19 +23,14 @@ engine = create_async_engine(
     future=True,
 )
 
-async_session = async_sessionmaker(
-    engine,
-    expire_on_commit=False
-)
+async_session = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def database_ping() -> bool:
     logger.debug("Pinging database")
     try:
         async with async_session() as session:
-            query = await session.execute(text(
-                """select 1"""
-            ))
+            query = await session.execute(text("""select 1"""))
             result = query.scalar_one() == 1
             logger.debug("Database ping successful")
             return result

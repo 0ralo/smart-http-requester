@@ -1,6 +1,12 @@
-
-from schemas.auth import UserRegisterBody, UserRegisterResponse, UserLoginBody, AccessTokenResponse, UserIdPassword, \
-    User, UserMe
+from schemas.auth import (
+    UserRegisterBody,
+    UserRegisterResponse,
+    UserLoginBody,
+    AccessTokenResponse,
+    UserIdPassword,
+    User,
+    UserMe,
+)
 from schemas.task import TaskCreate, TaskResponse, TaskUpdate
 
 __all__ = [
@@ -15,5 +21,3 @@ __all__ = [
     "TaskResponse",
     "TaskUpdate",
 ]
-
-

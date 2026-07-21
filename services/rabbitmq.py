@@ -51,14 +51,20 @@ async def setup_rabbitmq_with_retries() -> None:
     try:
         await channel.set_qos(prefetch_count=10)
 
-        main_ex = await channel.declare_exchange(TASK_EXCHANGE, ExchangeType.DIRECT, durable=True)
-        dlx_ex = await channel.declare_exchange(DLX_EXCHANGE, ExchangeType.DIRECT, durable=True)
+        main_ex = await channel.declare_exchange(
+            TASK_EXCHANGE, ExchangeType.DIRECT, durable=True
+        )
+        dlx_ex = await channel.declare_exchange(
+            DLX_EXCHANGE, ExchangeType.DIRECT, durable=True
+        )
 
         main_queue_args = {
             "x-dead-letter-exchange": DLX_EXCHANGE,
             "x-dead-letter-routing-key": "retry.1s",
         }
-        task_queue = await channel.declare_queue(TASK_QUEUE, durable=True, arguments=main_queue_args)
+        task_queue = await channel.declare_queue(
+            TASK_QUEUE, durable=True, arguments=main_queue_args
+        )
         await task_queue.bind(main_ex, routing_key=TASK_QUEUE)
         await task_queue.bind(dlx_ex, routing_key=TASK_QUEUE)
 
@@ -68,7 +74,9 @@ async def setup_rabbitmq_with_retries() -> None:
                 "x-dead-letter-exchange": DLX_EXCHANGE,
                 "x-dead-letter-routing-key": TASK_QUEUE,
             }
-            queue = await channel.declare_queue(config["name"], durable=True, arguments=queue_args)
+            queue = await channel.declare_queue(
+                config["name"], durable=True, arguments=queue_args
+            )
             await queue.bind(dlx_ex, routing_key=config["name"])
     finally:
         await channel.close()
@@ -84,9 +92,13 @@ async def publish_task(payload: Union[bytes, str], attempts: int = 0) -> None:
     conn = await get_rabbitmq()
     channel = await conn.channel()
     try:
-        main_ex = await channel.declare_exchange(TASK_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
+        main_ex = await channel.declare_exchange(
+            TASK_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True
+        )
         body = payload if isinstance(payload, bytes) else str(payload).encode()
-        message = aio_pika.Message(body=body, headers={"x-attempts": attempts, "x-attempts-done": 0})
+        message = aio_pika.Message(
+            body=body, headers={"x-attempts": attempts, "x-attempts-done": 0}
+        )
         await main_ex.publish(message, routing_key=TASK_QUEUE)
         logger.debug("RabbitMQ task published")
     except Exception:
