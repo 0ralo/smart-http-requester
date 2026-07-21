@@ -1,5 +1,5 @@
 """Tests for the Prometheus metrics endpoint."""
-from httpx import AsyncClient, ASGITransport
+from httpx import AsyncClient
 import pytest
 
 

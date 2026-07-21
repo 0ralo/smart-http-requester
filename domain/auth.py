@@ -1,10 +1,5 @@
 import hashlib
-import uuid
-
-try:
-    import asyncpg
-except ImportError:  # pragma: no cover - optional dependency in test environments
-    asyncpg = None
+import asyncpg
 
 import sqlalchemy
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -119,7 +114,7 @@ async def refresh_token(
         logger.warning("Token refresh failed: user_id=%s not found", user_id)
         raise UserDoesNotExists
     logger.info("Token refreshed successfully for user_id=%s", user_id)
-    return AccessTokenResponse(access_token=str(token), token_type="Bearer")
+    return AccessTokenResponse(access_token=str(token))
 
 
 async def get_user_info(

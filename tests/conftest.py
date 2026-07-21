@@ -1,5 +1,4 @@
 """Pytest configuration and shared fixtures."""
-import asyncio
 import hashlib
 from typing import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -35,6 +34,7 @@ from schemas import (
 import datetime
 from uuid import uuid4
 
+
 @pytest.fixture
 async def client(app):
     """Create an async client for testing."""
@@ -47,15 +47,15 @@ async def client(app):
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Create an in-memory SQLite async session for testing."""
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
-    
+
     async_session = async_sessionmaker(engine, expire_on_commit=False)
-    
+
     async with engine.begin() as conn:
         await conn.run_sync(lambda: None)
-    
+
     async with async_session() as session:
         yield session
-    
+
     await engine.dispose()
 
 

@@ -91,7 +91,7 @@ class TaskRepository:
             INSERT INTO tasks (user_id, url, method, headers, body, max_attempts, status, attempt_count)
             VALUES {', '.join(values)}
             RETURNING id, user_id, url, method, headers, body, status, attempt_count, max_attempts, result, created_at, updated_at
-        """).bindparams(*bindparams))
+        """).bindparams(*bindparams))  # nosec B608 - Secure, all parameters are literal, others passed through Bind Parameter
 
         raw_tasks = query.fetchall()
         return [TaskResponse.model_validate(task) for task in raw_tasks]
@@ -152,17 +152,6 @@ class TaskRepository:
         ))
         raw_task = query.fetchone()
         task = TaskResponse.model_validate(raw_task)
-        
-        # publish status change if it happened
-        try:
-            new_status = task.status
-            if current_status != new_status:
-                payload = json.dumps({"task_id": str(task.id), "status": new_status})
-                redis = await get_redis()
-                await redis.publish("tasks.status", payload)
-        except Exception:
-            # don't fail DB operations if publishing failed
-            pass
 
         return task, user_id, current_status
 

@@ -2,7 +2,6 @@
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
 import time
 
 from services.logger import logger

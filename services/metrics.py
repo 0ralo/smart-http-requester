@@ -1,8 +1,6 @@
 """Prometheus metrics collection for FastAPI endpoints."""
 
 from prometheus_client import Counter, Histogram, Gauge
-import time
-from typing import Callable
 
 # HTTP Request metrics
 http_requests_total = Counter(

@@ -78,7 +78,7 @@ async def init_script():
     return (await get_redis()).register_script(lua_script)
 
 
-async def check_rate_limit(key: str, limit: int = 100, window: int = 60) -> (bool, float, int):
+async def check_rate_limit(key: str, limit: int = 100, window: int = 60) -> tuple[bool, float, int]:
     script = await get_script()
     now = int(time.time())
     result = await script(keys=[key], args=[limit, window, now])

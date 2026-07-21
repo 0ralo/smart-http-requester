@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Depends, Query, status, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, Depends, Query, status, WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from middleware.auth import authorization, is_str_uuid
